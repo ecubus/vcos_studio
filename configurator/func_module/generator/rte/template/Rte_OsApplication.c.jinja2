@@ -1,0 +1,389 @@
+{{get_copyright()}}
+
+/*!*********************************************************************************************************************
+ * @file        Rte_{{appl_name}}.c
+ * @brief       RTE implementation file
+ * @details     Encapsulates the setup and management of tasks, events, and inter-component communication
+ *              for an OS application
+ * @date        {{get_generation_time_temp()}}
+ * @toolversion {{get_vcos_version_temp()}}
+ **********************************************************************************************************************/
+
+/*
+ * DESCRIPTION
+ * This source file is the implementation of Tasks behaviors and
+ * some Rte interfaces.
+ *
+ * When tasks are activated, Basic task will excute its code directly,
+ * while extended task will wait some events. Extended task will excute
+ * codes corresponding to the specific event when getting the event.
+ */
+#define RTE_CORE
+{%- for header_file in get_module_header_file_list() %}
+#include "SchM_{{header_file}}.h"
+{%- endfor %}
+#include "Os.h"
+#include "Rte.h"
+#include "Rte_Main.h"
+#include "Rte_Cbk.h"
+#include "task_cfg.h"
+#include "event_cfg.h"
+{%- set swcs = get_appl_swc_name_list() %}
+{%- for swc in swcs %}
+#include "Rte_{{swc}}.h"
+{%- endfor %}
+
+#include "Rte_{{appl_name}}.h"
+#include "Rte_Hook.h"
+
+
+{%- set core_id = get_appl_core_id(appl_name) %}
+{%- set is_privileged = get_appl_is_privileged(appl_name) %}
+{%- set isr_simplified = get_rte_generation_isr_simplified() %}
+/*
+ * API to control global interrupt enable/disable
+ */
+{%- if is_privileged and isr_simplified %}
+#define Rte_DisableAllInterrupts() osDisableGlobalKM()
+#define Rte_EnableAllInterrupts()  osEnableGlobalKM()
+#define Rte_DisableOSInterrupts()  osDisableLevelKM()
+#define Rte_EnableOSInterrupts()   osEnableLevelKM()
+{%- else %}
+#define Rte_DisableAllInterrupts() DisableAllInterrupts()
+#define Rte_EnableAllInterrupts()  EnableAllInterrupts()
+#define Rte_DisableOSInterrupts()  SuspendOSInterrupts()
+#define Rte_EnableOSInterrupts()   ResumeOSInterrupts()
+{%- endif %}
+
+#define Rte_DisableAllInterruptsOS() DisableAllInterrupts()
+#define Rte_EnableAllInterruptsOS()  EnableAllInterrupts()
+#define Rte_DisableOSInterruptsOS()  SuspendOSInterrupts()
+#define Rte_EnableOSInterruptsOS()   ResumeOSInterrupts()
+
+#define RTE_TASK_TIMEOUT_EVENT_MASK   EVENT_MASK_BIT_0
+#define RTE_TASK_WAITPOINT_EVENT_MASK EVENT_MASK_BIT_1
+
+#define RTE_MSEC_TO_TICKS(time_ms, seconds_per_tick) ((uint32) ((((float32) time_ms) / (((float32) seconds_per_tick) * 1000.0F)) + 0.5F))
+
+{% for runnable in get_cur_appl_runnable_list() %}
+void {{ runnable["name"] }}({{runnable["args"]}});
+{%- endfor %}
+
+
+#define RTE_START_SEC_CODE
+#include "rte_memmap.h"
+/*
+ * Basic task implementations
+ */
+{%- set task_list = get_cur_appl_basic_task_with_st_list() %}
+{%- set runnables_dict = get_all_runnables_dict() %}
+{%- for task_info in task_list %}
+{%- set task_name = task_info["task_name"] %}
+FUNC(void,RTE_CODE) os_task_{{task_name.lower()}}(void *arg)
+{
+    (void)arg;
+
+    {%- set schedule_table_step_info = get_schedule_table_step_info(task_name) %}
+    {%- set schedule_table_step_list = schedule_table_step_info['step_list'] %}
+    {%- set schedule_table_step_cycle_start = schedule_table_step_info['step_cycle_start'] %}
+    {%- for schedule_table_step in schedule_table_step_list %}
+    {%- if loop.first %}
+    if(Rte_ScheduleTable_{{task_name}}_Step == {{loop.index0}}U)
+    {
+        if (Rte_InitState == RTE_STATE_INIT) {
+        {%- for period in schedule_table_step %}
+        {%- set runnable_list = get_timing_event_runnable_list(task_name, period) %}
+        {%- for runnable_symbol in runnable_list %}
+            {%- set hook_tuple_list = get_vfb_runnable_hook_name(runnable_symbol) %}
+            {%- set vfb_hook_start_str = hook_tuple_list[0] %}
+            {%- set vfb_hook_return_str = hook_tuple_list[1] %}
+            {%- if vfb_hook_start_str %}
+            {{ vfb_hook_start_str }}();
+            {%- endif %}
+            {{ runnable_symbol }}();
+            {%- if vfb_hook_return_str %}
+            {{ vfb_hook_return_str }}();
+            {%- endif %}
+        {%- endfor %}
+        {%- endfor %}
+        }
+        Rte_ScheduleTable_{{task_name}}_Step = {{loop.index0 + 1}};
+    }
+    {%- else %}
+    else if(Rte_ScheduleTable_{{task_name}}_Step == {{loop.index0}}U)
+    {
+        if (Rte_InitState == RTE_STATE_INIT) {
+        {%- for period in schedule_table_step %}
+        {%- set runnable_list = get_timing_event_runnable_list(task_name, period) %}
+        {%- for runnable_symbol in runnable_list %}
+            {%- set hook_tuple_list = get_vfb_runnable_hook_name(runnable_symbol) %}
+            {%- set vfb_hook_start_str = hook_tuple_list[0] %}
+            {%- set vfb_hook_return_str = hook_tuple_list[1] %}
+            {%- if vfb_hook_start_str %}
+            {{ vfb_hook_start_str }}();
+            {%- endif %}
+            {{ runnable_symbol }}();
+            {%- if vfb_hook_return_str %}
+            {{ vfb_hook_return_str }}();
+            {%- endif %}
+        {%- endfor %}
+        {%- endfor %}
+        }
+        {%- if loop.last %}
+        Rte_ScheduleTable_{{task_name}}_Step = {{schedule_table_step_cycle_start}};
+        {%- else %}
+        Rte_ScheduleTable_{{task_name}}_Step = {{loop.index0 + 1}};
+        {%- endif %}
+    }
+    {%- endif %}
+    {%- endfor %}{# {%- for schedule_table_step in schedule_table_step_list%} #}
+
+    (void) TerminateTask();
+}
+{% endfor -%}{# for task_info in task_list #}
+
+
+{%- set task_list = get_cur_appl_basic_task_without_st_list() %}
+{%- set runnables_dict = get_all_runnables_dict() %}
+{%- set implicit_sr_data_dict = get_all_implicit_sr_data_dict() %}
+{%- for task_info in task_list %}
+{%- set task_name = task_info["task_name"] %}
+FUNC(void,RTE_CODE) os_task_{{task_name.lower()}}(void *arg)
+{
+    (void)arg;
+
+    {%- set runnable_list = get_init_event_runnable_list(task_name) %}
+    {%- for runnable_symbol in runnable_list %}
+    {%- set rport_data_list = implicit_sr_data_dict[runnable_symbol]["rport_data"] %}
+    {%- set hook_tuple_list = get_vfb_runnable_hook_name(runnable_symbol) %}
+    {%- set vfb_hook_start_str = hook_tuple_list[0] %}
+    {%- set vfb_hook_return_str = hook_tuple_list[1] %}
+    {%- if vfb_hook_start_str %}
+    {{ vfb_hook_start_str }}();
+    {%- endif %}
+
+    {%- set exclusive_areas = get_runs_inside_exclusive_areas(runnable_symbol, task_name) %}
+    {%- for exclusive_area in exclusive_areas %}
+    {%- if exclusive_area["name"] %}
+    {%- if loop.first %}
+    {%- endif %}
+    {{ exclusive_area["suspend"]}}({{ exclusive_area["input_param"] }});
+    {%- endif %}
+    {%- endfor %}
+    {{ runnable_symbol }}();
+    {%- for exclusive_area in exclusive_areas | reverse %}
+    {%- if exclusive_area["name"] %}
+    {%- if loop.first %}
+    {%- endif %}
+    {{ exclusive_area["resume"] }}({{ exclusive_area["input_param"] }});
+    {%- endif %}
+    {%- endfor %}
+
+    {%- if vfb_hook_return_str %}
+    {{ vfb_hook_return_str }}();
+    {%- endif %}
+    {%- endfor %}
+
+    {%- set runnable_groups = get_runnable_groups(task_name) %}
+    {%- for runnable_groups in runnable_groups %}
+    {%- for runnable_symbol in runnable_groups["entity"] -%}
+        {%- set hook_tuple_list = get_vfb_runnable_hook_name(runnable_symbol) %}
+        {%- set vfb_hook_start_str = hook_tuple_list[0] %}
+        {%- set vfb_hook_return_str = hook_tuple_list[1] %}
+        {%- if vfb_hook_start_str %}
+    {{ vfb_hook_start_str }}();
+        {%- endif %}
+
+    {%- set exclusive_areas = get_runs_inside_exclusive_areas(runnable_symbol, task_name) %}
+    {%- for exclusive_area in exclusive_areas %}
+    {%- if exclusive_area["name"] %}
+    {%- if loop.first %}
+    {%- endif %}
+    {{ exclusive_area["suspend"] }}({{ exclusive_area["input_param"] }});
+    {%- endif %}
+    {%- endfor %}
+    {{ runnable_symbol }}();
+    {%- for exclusive_area in exclusive_areas | reverse %}
+    {%- if exclusive_area["name"] %}
+    {%- if loop.first %}
+    {%- endif %}
+    {{ exclusive_area["resume"] }}({{ exclusive_area["input_param"] }});
+    {%- endif %}
+    {%- endfor %}
+
+    {%- if vfb_hook_return_str %}
+    {{ vfb_hook_return_str }}();
+    {%- endif %}
+    {%- endfor %}
+    {%- endfor %}
+
+    (void) TerminateTask();
+}
+{% endfor -%}{# for task_info in task_list #}
+
+/*
+ * Extended task implementations
+ */
+{%- set task_list = get_cur_appl_extended_task_list() %}
+{%- set runnables_dict = get_all_runnables_dict() %}
+{%- set implicit_sr_data_dict = get_all_implicit_sr_data_dict() %}
+
+{%- for task_info in task_list %}
+{%- set task_name = task_info["task_name"] %}
+FUNC(void,RTE_CODE) os_task_{{task_name.lower()}}(void *arg)
+{
+    (void)arg;
+
+    {%- set event_mask_list = get_all_wait_event_mask_list(task_name) %}
+    {%- if event_mask_list|length != 0 %}
+    EventMaskType ev;
+    {%- endif %}
+    {%- set activation_vector_type = get_task_activation_vector_type(task_name) %}
+    {%- if activation_vector_type | length > 0 %}
+    {{activation_vector_type}} activationVector;
+    {%- endif %}
+
+    {%- set runnable_list = get_init_event_runnable_list(task_name) %}
+    {%- for runnable_symbol in runnable_list %}
+        {%- set hook_tuple_list = get_vfb_runnable_hook_name(runnable_symbol) %}
+        {%- set vfb_hook_start_str = hook_tuple_list[0] %}
+        {%- set vfb_hook_return_str = hook_tuple_list[1] %}
+        {%- if vfb_hook_start_str %}
+    {{ vfb_hook_start_str }}();
+        {%- endif %}
+    {%- set rport_data_list = implicit_sr_data_dict[runnable_symbol]["rport_data"] %}
+    {%- for rport_data in rport_data_list %}
+
+    {%- endfor %}
+
+    {%- set exclusive_areas = get_runs_inside_exclusive_areas(runnable_symbol, task_name) %}
+    {%- for exclusive_area in exclusive_areas %}
+    {%- if exclusive_area["name"] %}
+    {%- if loop.first %}
+    {%- endif %}
+    {{ exclusive_area["suspend"]}}({{ exclusive_area["input_param"] }});
+    {%- endif %}
+    {%- endfor %}
+    {{ runnable_symbol }}();
+    {%- for exclusive_area in exclusive_areas | reverse %}
+    {%- if exclusive_area["name"] %}
+    {%- if loop.first %}
+    {%- endif %}
+    {{ exclusive_area["resume"] }}({{ exclusive_area["input_param"] }});
+    {%- endif %}
+    {%- endfor %}
+    {%- if vfb_hook_return_str %}
+    {{ vfb_hook_return_str }}();
+    {%- endif %}
+    {%- endfor %}
+
+    {%- if event_mask_list|length != 0 %}
+
+    for (;;) {
+        (void)WaitEvent({{get_event_masks_with_type_conversion(event_mask_list)}});
+        (void)GetEvent((TaskType) OS_TASK_{{task_name.upper()}}_ID, &ev);
+        (void)ClearEvent(ev & ({{get_event_masks_with_type_conversion(event_mask_list)}}));
+        {%- set ns = namespace(cp_func_done=false) %}
+        {%- set max_period_ev_name = get_max_period_event_in_period_task(task_name) %}
+        {%- for runnable_groups in get_runnable_groups(task_name) %}
+
+        {%- if runnable_groups["mask"] == "BackgroundEvent" %}
+
+        if (Rte_StartTiming_InitState == RTE_STATE_INIT) {
+        {%- elif runnable_groups["has_mode_disabling"] %}
+
+        if (!{{runnable_groups["disabling_flag"].upper()}} && ((ev & {{runnable_groups["mask"]}}) != (EventMaskType)0)) {
+        {%- else %}
+        {%- if loop.length > 1 %}
+        if ((ev & {{runnable_groups["mask"]}}) != (EventMaskType)0) {
+        {%- endif %}
+        {%- endif %}
+            {%- if max_period_ev_name and max_period_ev_name in runnable_groups["mask"] and not ns.cp_func_done %}
+                {%- set check_point_func_param = get_alive_check_point_func_param(task_name, max_period_ev_name) %}
+                {%- set ns.cp_func_done = true %}
+                {%- if "WdgM" in get_enable_module_list() %}
+            WdgM_CheckpointReached({{ check_point_func_param | join(", ") }});
+                {%- endif %}
+            {%- endif %}
+
+        {%- for runnable_symbol in runnable_groups["entity"] %}
+            {%- set activation_reasons = get_runnable_activation_reasons(runnable_symbol, task_name)%}
+            {%- for activation_reason in activation_reasons %}
+                {%- if loop.first %}
+            activationVector = 0U;
+                {%- endif %}
+            if ((ev & (EventMaskType){{activation_reason["mask"]}}) != (EventMaskType)0) {
+                activationVector |= Rte_ActivatingEvent_{{runnable_symbol}}_{{activation_reason["name"]}};
+            }
+            {%- endfor %}
+            {%- set hook_tuple_list = get_vfb_runnable_hook_name(runnable_symbol) %}
+            {%- set vfb_hook_start_str = hook_tuple_list[0] %}
+            {%- set vfb_hook_return_str = hook_tuple_list[1] %}
+            {%- if vfb_hook_start_str %}
+            {{ vfb_hook_start_str }}();
+            {%- endif %}
+
+
+            {%- set exclusive_areas = get_runs_inside_exclusive_areas(runnable_symbol, task_name) %}
+            {%- for exclusive_area in exclusive_areas %}
+            {%- if exclusive_area["name"] %}
+            {%- if loop.first %}
+            {%- endif %}
+            {{ exclusive_area["suspend"] }}({{ exclusive_area["input_param"] }});
+            {%- endif %}
+            {%- endfor %}
+            {%- set runnable_args = get_runnable_args(runnable_symbol, task_name) %}
+            {{ runnable_symbol }}({{runnable_args}});
+            {%- for exclusive_area in exclusive_areas | reverse %}
+            {%- if exclusive_area["name"] %}
+            {%- if loop.first %}
+            {%- endif %}
+            {{ exclusive_area["resume"] }}({{ exclusive_area["input_param"] }});
+            {%- endif %}
+            {%- endfor %}
+
+            {%- if vfb_hook_return_str %}
+            {{ vfb_hook_return_str }}();
+            {%- endif %}
+        {%- endfor %}{#- for runnable_symbol in runnable_groups["entity"]#}
+        {%- if loop.length > 1 %}
+        }
+        {%- endif %}
+        {%- endfor %}{#- for runnable_groups in get_runnable_groups(task) #}
+    }
+    {%- else %}
+    {%- set runnable_groups = get_runnable_groups(task_name) %}
+    {%- if only_background_event(task_name) %}
+    for(;;) {
+        {%- for runnable_group in runnable_groups %}
+
+        {%- for runnable_symbol in runnable_group["entity"] -%}
+        if (Rte_StartTiming_InitState == RTE_STATE_INIT) {
+            {%- set hook_tuple_list = get_vfb_runnable_hook_name(runnable_symbol) %}
+            {%- set vfb_hook_start_str = hook_tuple_list[0] %}
+            {%- set vfb_hook_return_str = hook_tuple_list[1] %}
+            {%- if vfb_hook_start_str %}
+            {{ vfb_hook_start_str }}();
+            {%- endif %}
+            {{ runnable_symbol }}();
+            {%- if vfb_hook_return_str %}
+            {{ vfb_hook_return_str }}();
+            {%- endif %}
+        }
+        {%- endfor %}
+        {%- endfor %}
+    }
+    {%- endif %}{# {%- if only_background_event(task_name) %} #}
+
+    {%- if runnable_list|length != 0 %}
+    (void) TerminateTask();
+    {%- endif %}
+
+    {%- endif %}{# if event_mask_list|length != 0 #}
+}
+{% endfor -%}{# for task_info in task_list #}
+#define RTE_STOP_SEC_CODE
+#include "rte_memmap.h"
+
+
+{# blank line at end of file #}

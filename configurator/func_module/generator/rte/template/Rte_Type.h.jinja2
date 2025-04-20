@@ -1,0 +1,47 @@
+{{get_copyright()}}
+
+/*!*********************************************************************************************************************
+ * @file        Rte_Type.h
+ * @brief       Header file containing user defined AUTOSAR types and RTE structures
+ * @details     Defines data structures that are required by the SWC to use the RTE implementation
+ * @date        {{get_generation_time_temp()}}
+ * @toolversion {{get_vcos_version_temp()}}
+ **********************************************************************************************************************/
+
+#ifndef RTE_TYPE_H
+#define RTE_TYPE_H
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#include "Platform_Types.h"
+#include "Std_Types.h"
+#include "Rte.h"
+
+
+#define RTE_STATE_UNINIT          (0U)
+#define RTE_STATE_SCHM_INIT       (1U)
+#define RTE_STATE_INIT            (2U)
+
+
+/*
+ * Type definitions for activation reasons of runnables
+ */
+{%- set activation_reasons = get_activation_reasons() %}
+{%- for activation_reason in activation_reasons %}
+    {%- set activation_vector = get_activation_vector(activation_reason) %}
+typedef {{activation_vector["type"]}} Rte_ActivatingEvent_{{activation_vector["name"]}};
+    {%- set activation_reason_defines = get_activation_reason_defines(activation_reason) %}
+    {%- for activation_reason_define in activation_reason_defines %}
+#define Rte_ActivatingEvent_{{activation_reason_define["name"]}}    ({{activation_reason_define["value"]}}U)
+    {%- endfor %}
+{%- endfor %}
+
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* RTE_TYPE_H */
+{# blank line at end of file #}

@@ -1,0 +1,236 @@
+{{get_copyright()}}
+
+/*!*********************************************************************************************************************
+ * @file        Rte.c
+ * @brief       RTE implementation file
+ * @details     Provides standardized APIs for the application layer and handles the communication mechanisms
+ * @date        {{get_generation_time_temp()}}
+ * @toolversion {{get_vcos_version_temp()}}
+ **********************************************************************************************************************/
+
+#include "Os.h"
+#include "Rte.h"
+#include "Rte_Cbk.h"
+#include "Rte_Type.h"
+#include "Rte_Main.h"
+#include "core_cfg.h"
+#include "task_cfg.h"
+// #include "Alarm_Cfg.h"
+#include "event_cfg.h"
+#include "schedtable_cfg.h"
+{%- if need_include_com_h() %}
+#include "Com.h"
+{%- endif %}
+
+#define RTE_MEM32ALIGN (sizeof(uint32) - 1U)
+{%- set gen_compu_method = get_gen_compu_method_flag() %}
+{%- set isr_simplified = get_rte_generation_isr_simplified() %}
+/*
+ * API for enable / disable interrupts global
+ */
+{%- if isr_simplified %}
+#define Rte_DisableAllInterrupts() osDisableGlobalKM()
+#define Rte_EnableAllInterrupts()  osEnableGlobalKM()
+#define Rte_DisableOSInterrupts()  osDisableLevelKM()
+#define Rte_EnableOSInterrupts()   osEnableLevelKM()
+{%- else %}
+#define Rte_DisableAllInterrupts() DisableAllInterrupts()
+#define Rte_EnableAllInterrupts()  EnableAllInterrupts()
+#define Rte_DisableOSInterrupts()  SuspendOSInterrupts()
+#define Rte_EnableOSInterrupts()   ResumeOSInterrupts()
+{%- endif %}
+
+#define Rte_DisableAllInterruptsOS() DisableAllInterrupts()
+#define Rte_EnableAllInterruptsOS()  EnableAllInterrupts()
+#define Rte_DisableOSInterruptsOS()  SuspendOSInterrupts()
+#define Rte_EnableOSInterruptsOS()   ResumeOSInterrupts()
+
+/*
+ * Rte Init State Variable
+ */
+
+volatile uint8 Rte_StartTiming_InitState;  // RTE_STATE_UNINIT, all core deinit
+{%- set task_access_app = get_os_task_accessing_application() %}
+{%- for core_id in core_id_list %}
+    {%- if core_id == "0" %}
+volatile uint8 Rte_InitState;  // RTE_STATE_UNINIT
+    {%- else %}
+        {%- if task_access_app[core_id] %}
+volatile uint8 Rte_InitState_{{core_id}};  // RTE_STATE_UNINIT
+        {%- else %}
+volatile uint8 Rte_InitState_{{core_id}};  // RTE_STATE_UNINIT
+        {%- endif %}
+    {%- endif %}
+{%- endfor %}
+
+#define RTE_START_SEC_CODE
+#include "rte_memmap.h"
+
+/**
+ * Activate the BSW Async task and set alarm, set Rte_InitState to RTE_STATE_SCHM_INIT
+ */
+FUNC(void,RTE_CODE) SchM_Init(void)
+{
+    {%- for core_id, task_list in core_to_task_dict.items() %}
+    {%- if loop.first %}
+    CoreIdType id = GetCoreID();
+    {%- endif %}
+    if (id == OS_CORE_ID_{{core_id}}) {
+        /* activate the tasks */
+    {%- for task in task_list %}
+        {%- set task_name = task["name"] %}
+        {%- if task["is_bsw_task"] %}
+        {%- if not task["is_basic"] or not task["is_schedule_table_task"] %}
+        (void)ActivateTask((TaskType)OS_TASK_{{task_name.upper()}}_ID);
+        {%- endif %}
+        {%- endif %}
+    {%- endfor %}
+        /* activate the alarms used for TimingEvents */
+    {%- if core_id in core_to_alarm_dict %}
+    {%- for alarm in core_to_alarm_dict[core_id] %}
+        {%- if alarm["is_bsw_alarm"] %}
+        //(void)SetRelAlarm((AlarmType)OS_ALARM_{{alarm["name"].upper()}}_ID, {{alarm["alarm_time"]}}, {{alarm["cycle_time"]}});
+        {%- endif %}
+    {%- endfor %}
+    {%- endif %}
+
+        /* activate the schedule tables */
+    {%- for task in task_list %}
+        {%- set task_name = task["name"] %}
+        {%- if task["is_schedule_table_task"] and task["has_unique_sch_tbl"] %}
+        {%- set init_sch_tbl_name, main_sch_tbl_name = get_schedule_table_name(task_name) %}
+        {%- if is_init_schedule_table(task_name) %}
+        (void)NextScheduleTableFromStop((ScheduleTableType)OS_SCHEDTABLE_{{init_sch_tbl_name}}_ID, (ScheduleTableType)OS_SCHEDTABLE_{{main_sch_tbl_name}}_ID);
+        (void)StartScheduleTableRel((ScheduleTableType)OS_SCHEDTABLE_{{init_sch_tbl_name}}_ID, 1);
+        {%- else %}
+        (void)StartScheduleTableRel((ScheduleTableType)OS_SCHEDTABLE_{{main_sch_tbl_name}}_ID, 1);
+        {%- endif %}
+        {%- endif %}
+    {%- endfor %}
+
+        {%- if core_id == "0" %}
+        Rte_InitState = RTE_STATE_SCHM_INIT;
+        {%- else %}
+        Rte_InitState_{{core_id}} = RTE_STATE_SCHM_INIT;
+        {%- endif %}
+    }
+    {%- endfor %}
+}
+
+/**
+ * Activate the Appl task and set alarm, set Rte_InitState to RTE_STATE_INIT
+ *
+ * @return Std_ReturnType
+ *
+ * @retval E_OK
+ */
+FUNC(Std_ReturnType,RTE_CODE) Rte_Start(void)
+{
+    {%- for core_id in core_id_list %}
+    {%- if loop.first %}
+    CoreIdType id = GetCoreID();
+    {%- endif %}
+    if (id == OS_CORE_ID_{{core_id}}) {
+        /* activate the tasks */
+    {%- for task in core_to_task_dict[core_id] %}
+        {%- if not task["is_bsw_task"] %}
+        {%- if not task["is_basic"] or not task["is_schedule_table_task"] %}
+        (void)ActivateTask((TaskType)OS_TASK_{{task["name"].upper()}}_ID);
+        {%- endif %}
+        {%- endif %}
+    {%- endfor %}
+        /* activate the alarms used for TimingEvents */
+    {%- if core_id in core_to_alarm_dict %}
+    {%- for alarm in core_to_alarm_dict[core_id] %}
+        {%- if not alarm["is_bsw_alarm"] %}
+        //(void)SetRelAlarm((AlarmType)OS_ALARM_{{alarm["name"].upper()}}_ID, {{alarm["alarm_time"]}}, {{alarm["cycle_time"]}});
+        {%- endif %}
+    {%- endfor %}
+    {%- endif %}
+    {%- if core_id == "0" %}
+        Rte_StartTiming_InitState = RTE_STATE_INIT;
+        Rte_InitState = RTE_STATE_INIT;
+    {%- else %}
+        Rte_InitState_{{core_id}} = RTE_STATE_INIT;
+    {%- endif %}
+    }
+    {%- endfor %}
+    return RTE_E_OK;
+}
+
+/**
+ * Unset alarm, set Rte_StartTiming_InitState to RTE_STATE_UNINIT,
+ * Set Rte_InitState to RTE_STATE_SCHM_INIT
+ *
+ * @return Std_ReturnType
+ *
+ * @retval RTE_E_OK
+ */
+FUNC(Std_ReturnType,RTE_CODE) Rte_Stop(void)
+{
+    {%- for core_id, alarm_list in core_to_alarm_dict.items() %}
+    {%- if loop.first %}
+    CoreIdType id = GetCoreID();
+    {%- endif %}
+    if (id == OS_CORE_ID_{{core_id}}) {
+        Rte_StartTiming_InitState = RTE_STATE_UNINIT;
+        /* deactivate alarms */
+    {%- for alarm in alarm_list %}
+    {%- if not alarm["is_bsw_alarm"] %}
+        //(void)CancelAlarm((AlarmType)Os_Alarm_{{alarm["name"]}}_ID);
+    {%- endif %}
+    {%- endfor %}
+    {%- if core_id == "0" %}
+        Rte_InitState = RTE_STATE_SCHM_INIT;
+    {%- else %}
+        Rte_InitState_{{core_id}} = RTE_STATE_SCHM_INIT;
+    {%- endif %}
+    }
+    {%- endfor %}
+    return RTE_E_OK;
+}
+
+/**
+ * Unset alarm, set Rte_InitState to RTE_STATE_UNINIT
+ */
+FUNC(void,RTE_CODE) SchM_Deinit(void)
+{
+    {%- for core_id in core_to_task_dict %}
+    {%- if loop.first %}
+    CoreIdType id = GetCoreID();
+    {%- endif %}
+    if (id == OS_CORE_ID_{{core_id}}) {
+        Rte_StartTiming_InitState = RTE_STATE_UNINIT;
+        /* deactivate alarms */
+    {%- set alarm_list = core_to_alarm_dict.get(core_id, []) %}
+    {%- for alarm in alarm_list %}
+    {%- if alarm["is_bsw_alarm"] %}
+        //(void)CancelAlarm((AlarmType)Os_Alarm_{{alarm["name"]}}_ID);
+    {%- endif %}
+    {%- endfor %}
+
+        /* deactivate the schedule tables */
+    {%- for task in core_to_task_dict[core_id] %}
+        {%- set task_name = task["name"] %}
+        {%- if task["is_schedule_table_task"] and task["has_unique_sch_tbl"] %}
+        {%- set init_sch_tbl_name, main_sch_tbl_name = get_schedule_table_name(task_name) %}
+        {%- if is_init_schedule_table(task_name) %}
+        (void)StopScheduleTable((ScheduleTableType)OS_SCHEDTABLE_{{init_sch_tbl_name}}_ID);
+        (void)StopScheduleTable((ScheduleTableType)OS_SCHEDTABLE_{{main_sch_tbl_name}}_ID);
+        {%- else %}
+        (void)StopScheduleTable((ScheduleTableType)OS_SCHEDTABLE_{{main_sch_tbl_name}}_ID);
+        {%- endif %}
+        {%- endif %}
+    {%- endfor %}
+
+    {%- if core_id == "0" %}
+        Rte_InitState = RTE_STATE_UNINIT;
+    {%- else %}
+        Rte_InitState_{{core_id}} = RTE_STATE_UNINIT;
+    {%- endif %}
+    }
+    {%- endfor %}
+}
+
+#define RTE_STOP_SEC_CODE
+#include "rte_memmap.h"

@@ -1,0 +1,62 @@
+{{get_copyright()}}
+
+{%- set swc_name = get_swc_name() %}
+{%- set swc_type = get_swc_type() %}
+{%- set gen_file_swc_type = get_gen_file_swc_type() %}
+/*!*********************************************************************************************************************
+ * @file        Rte_{{swc_name}}.h
+ * @brief       Application header file for SWC (Software Component)
+ * @details     Defines the RTE API and any associated data structures that
+ *              are required by the SWC to use the RTE implementation
+ * @date        {{get_generation_time_temp()}}
+ * @toolversion {{get_vcos_version_temp()}}
+ **********************************************************************************************************************/
+
+#ifndef RTE_{{swc_name|upper}}_H_
+#define RTE_{{swc_name|upper}}_H_
+
+{% if swc_type in gen_file_swc_type%}
+#ifndef RTE_CORE
+# ifdef RTE_APPLICATION_HEADER_FILE
+#  error Multiple application header files included.
+# endif
+# define RTE_APPLICATION_HEADER_FILE
+#endif
+{%- endif %}
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#include "Rte_Type.h"
+
+{#- Runnable API prototypes #}
+{%- set runnables = get_runnable_entity_list() %}
+{% if runnables %}
+{% if swc_type in gen_file_swc_type%}
+#define {{swc_name}}_START_SEC_CODE
+#include "{{swc_name}}_MemMap.h"
+{%- endif %}
+# ifdef RTE_CORE
+/*
+ * Runnable entity prototypes
+ */
+{%- endif %}
+{%- for runnable in runnables %}
+{%- if runnable["return_type"] == "" and runnable["trigger_event"] == "OperationInvokedEvent" or runnable["trigger_event"] == None%}
+{%- elif runnable["args"] | length != 0 %}
+/* Schedulable entities are declared by the RTE and also by the BSW modules, No functional risk, Both adhere to the Autosar specification. */
+extern {{runnable["return_type"]}} {{runnable["name"]}}({{ get_args_str_list(runnable["args"].values()) | join(", ") }});
+{%- elif runnable["args"] | length == 0 %}
+/* Schedulable entities are declared by the RTE and also by the BSW modules, No functional risk, Both adhere to the Autosar specification. */
+extern {{runnable["return_type"]}} {{runnable["name"]}}(void);
+{%- endif %}
+{%- endfor %}
+
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* RTE_{{swc_name|upper}}_H_ */
+{# blank line at end of file #}

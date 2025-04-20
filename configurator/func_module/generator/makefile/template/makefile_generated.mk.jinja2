@@ -1,0 +1,117 @@
+################################################################################
+# makefile for modules!
+# File name format: GenData.mk
+# File path restriction: autosar_cp_base\Projects\BCM_Sample\GenData
+################################################################################
+{%- set project_name = get_project_name() %}
+PROJECT_NAME := {{project_name}}
+APPLICATION_PATH := .
+
+{%- set project_file_path = get_project_file_path() %}
+PROJECT_FILE_PATH := {{project_file_path}}
+
+{%- set system_path = get_system_path() %}
+# System Path relative to application directory
+SYSTEM_PATH := {{system_path}}
+
+{%- set gendata_path = get_gendata_path() %}
+GENDATA_PATH := {{gendata_path}}
+
+{%- set mcal_path = get_mcal_path() %}
+# Mcal static source files
+MCAL_PATH := {{mcal_path}}
+
+{%- set mcal_gendate_path = get_mcal_gendate_path() %}
+# mcal gendate path relative to application directory
+MCAL_GENDATA_PATH := {{mcal_gendate_path}}
+
+{%- set mcal_version = get_mcal_version() %}
+# mcal version
+MCAL_VERSION := {{mcal_version}}
+
+{%- set swc_template_path = get_swc_template_path() %}
+SWC_TEMPLATE_PATH := {{swc_template_path}}
+
+{%- set bswm_user_callout_path = get_bswm_user_callout_path() %}
+BSW_CALLOUT_PATH := ./{{bswm_user_callout_path}}
+
+
+{%- set target = get_target() %}
+# Target chip selected.
+TARGET := {{target}}
+
+{%- set compiler = get_compiler() %}
+# Compiler selected.
+COMPILER := {{compiler}}
+
+{%- set compiler_path = get_compiler_path() %}
+# Compiler path.
+COMPILER_PATH = "{{compiler_path}}"
+
+#include other makefiles generated
+-include $(GENDATA_PATH)/vcosMtnce/vcosMtnce.mk
+
+{%- set enable_module_list = get_enable_module_list() %}
+
+
+{%- for module_name in enable_module_list %}
+{%- if module_name == "Os"%}
+VCOS_MODULE_CONFIG_AUTOSAROS=y
+{%- else %}
+VCOS_MODULE_CONFIG_{{module_name.upper()}}=y
+{%- endif %}
+{%- endfor%}
+
+{%if enable_module_list | length > 0 %}
+VCOS_MODULE_MACRO_LIST += \
+{%- for module_name in enable_module_list %}
+{%- if loop.last %}
+{%- if module_name == "Os"%}
+    VCOS_MODULE_CONFIG_AUTOSAROS=1
+{%- else %}
+    VCOS_MODULE_CONFIG_{{module_name.upper()}}=1
+{%- endif %}
+{%- else %}
+{%- if module_name == "Os"%}
+    VCOS_MODULE_CONFIG_AUTOSAROS=1 \
+{%- else %}
+    VCOS_MODULE_CONFIG_{{module_name.upper()}}=1 \
+{%- endif %}
+{%- endif %}
+{%- endfor%}
+{%- endif %}
+
+
+# Module: Rte
+ifeq ($(VCOS_MODULE_CONFIG_RTE),y)
+# module include file directory
+RTE_C_INCLUDE_PATHS += $(GENDATA_PATH)/Rte
+# Module source code directory
+RTE_C_SOURCES += $(wildcard $(GENDATA_PATH)/Rte/*.c)
+
+else
+# module include file directory
+VCOS_C_INCLUDE_PATHS += $(GENDATA_PATH)/SchM
+
+endif
+
+# Module: Appl
+# module include file directory
+VCOS_C_INCLUDE_PATHS += $(GENDATA_PATH)/Appl
+
+#include kconfig generated makefile
+-include $(GENDATA_PATH)/Sys_Cfg/Sys_Cfg.conf
+VCOS_C_INCLUDE_PATHS += $(GENDATA_PATH)/Sys_Cfg
+
+{%- set build_mode = get_build_mode() %}
+{%- if build_mode == "debug" %}
+#  Only for debug mode
+-include $(APPLICATION_PATH)/../../Test/Test.mk
+VCOS_C_INCLUDE_PATHS += $(TEST_C_INCLUDE_PATHS)
+VCOS_C_SOURCES += $(TEST_C_SOURCES)
+{%- endif %}
+
+
+{% for module_name in enable_module_list %}
+VCOS_C_INCLUDE_PATHS += $(GENDATA_PATH)/{{module_name}}
+{%- endfor %}

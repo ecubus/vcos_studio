@@ -30,30 +30,22 @@ REQ_PATH = os.path.abspath(os.path.join(CUR_PATH, "requirements.txt"))
 
 def init_env():
     parser = argparse.ArgumentParser()
-    parser.add_argument("-p", "--venv-path", type=str, default=VENV_PATH, help="Path to the virtual environment")
-    parser.add_argument(
-        "-c", "--check-packages", action="store_true", default=True, help="Check if all required packages are installed"
-    )
     parser.add_argument("-a", "--auto", action="store_true", default=False, help="Auto install packages")
     args = parser.parse_args()
     # 检查是否在虚拟环境中运行
     if os.environ.get("VIRTUAL_ENV") is None:
         print("非虚拟环境中运行: 创建虚拟环境并安装依赖...")
-        # 使用传入的路径作为虚拟环境目录
-        venv_dir = os.path.join(args.venv_path, ".venv")
-        # 判断是否已存在，如存在则跳过创建
-        if not os.path.exists(venv_dir):
-            print(f"创建虚拟环境到: {venv_dir}")
-            venv.create(venv_dir, with_pip=True)
-            install_packages(venv_dir)
+        venv_dir = os.path.join(VENV_PATH, ".venv")
+        print(f"创建虚拟环境到: {venv_dir}")
+        venv.create(venv_dir, clear=True, with_pip=True)
+        return install_packages(venv_dir)
 
-    elif args.check_packages or args.auto:
+    elif args.auto:
         req_comparison = compare_requirements()
         missing_deps = req_comparison["missing_required"]
         if missing_deps and args.auto:
             venv_dir = os.environ.get("VIRTUAL_ENV")
-            install_packages(venv_dir)
-            return
+            return install_packages(venv_dir)
         if missing_deps:
             print(f"\n警告: 发现 {len(missing_deps)} 个缺失的必要依赖: {', '.join(missing_deps)}")
         version_mismatches = [pkg for pkg, info in req_comparison["packages"].items() if info["status"] == "版本不符"]
@@ -90,8 +82,14 @@ def install_packages(venv_dir):
         for line in iter(process.stdout.readline, ""):
             print(line.strip())
         process.wait()
+        if process.returncode == 0:
+            print("三方包安装成功")
+        else:
+            print(f"三方包安装失败，返回值：{process.returncode}")
+        return process.returncode
     else:
-        print(f"警告: {req_file} 文件未找到")
+        print(f"警告:三方包安装失败， {req_file} 文件未找到")
+        return -1
 
 
 def parse_requirements(filename):
@@ -270,4 +268,4 @@ def compare_requirements():
 
 
 if __name__ == "__main__":
-    init_env()
+    sys.exit(init_env())

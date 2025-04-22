@@ -113,10 +113,7 @@ class ProjectUIBase(QDialog, Ui_Form):
         default_cfg_path = self.deafult_config_path
         target_text = self.comboBoxTarget.currentText()
         if self.lineEditMcalPath.text() != "":
-            if "E3640" in target_text:
-                self.mcal_path = os.path.abspath(os.path.join(default_cfg_path, "drivers", "mcal", "mcal_e3xx"))
-            elif "TC" in target_text:
-                self.mcal_path = os.path.abspath(os.path.join(default_cfg_path, "drivers", "mcal", "mcal_tc3xx"))
+            self.mcal_path = os.path.abspath(os.path.join(default_cfg_path, "drivers"))
             self.lineEditMcalPath.setText(self.mcal_path)
         self.lineEditMcalPath.setCursorPosition(0)
         self.comboBoxCompiler.clear()
@@ -548,7 +545,7 @@ class ProjectUIBase(QDialog, Ui_Form):
         target_text = self.comboBoxTarget.currentText()
         for target_abbr, target_dir in target_map_to_dir.items():
             if target_abbr in target_text:
-                self.mcal_path = os.path.abspath(os.path.join(default_config_path, "drivers", "mcal", target_dir))
+                self.mcal_path = os.path.abspath(os.path.join(default_config_path, "drivers"))
                 self.lineEditMcalPath.setText(self.mcal_path)
                 self.lineEditMcalPath.setCursorPosition(0)
                 break

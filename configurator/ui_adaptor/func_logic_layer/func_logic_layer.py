@@ -863,7 +863,7 @@ class FuncLogicLayer:
         return VCOS_VERSION
 
     def load_secondary_menu_cfg(self):
-        cfg_path = os.path.join(data_management.sys_info_class.system_path, "secondary_memu_cfg.json")
+        cfg_path = os.path.join(data_management.sys_info_class.system_path, "secondary_menu_cfg.json")
         data = {}
         with open(cfg_path, "r", encoding="utf-8") as json_file:
             try:

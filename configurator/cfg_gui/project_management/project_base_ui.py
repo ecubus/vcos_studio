@@ -21,6 +21,7 @@ from ui_adaptor.ui_interaction.ui_logger import logger
 from cfg_gui.resources.ui.ui_new_project import Ui_Form
 
 CUR_DIR = os.path.dirname(__file__)
+CONFIGURATOR_PLUG_IN_PATH = "components/configs/configurator_plug_in"
 
 
 class ProjectUIBase(QDialog, Ui_Form):
@@ -206,7 +207,7 @@ class ProjectUIBase(QDialog, Ui_Form):
         is_found = False
         if cur_path == os.path.abspath(os.path.join(cur_path, "..")):
             return ""
-        if os.path.exists(cur_path) and dir_name in os.listdir(cur_path):
+        if os.path.exists(os.path.join(cur_path, dir_name)):
             target_path = cur_path
             is_found = True
         if is_found is True:
@@ -277,7 +278,7 @@ class ProjectUIBase(QDialog, Ui_Form):
         if self.lineEditMcalPath.text() == "":
             self.update_mcal_related()
         if self.lineEditSystemPath.text() == "":
-            self.system_path = os.path.join(default_cfg_path, "components/configs/configurator_plug_in")
+            self.system_path = os.path.join(default_cfg_path, CONFIGURATOR_PLUG_IN_PATH)
             self.lineEditSystemPath.setText(self.system_path)
             self.lineEditSystemPath.setCursorPosition(0)
             self.system_path_text_changed_slot(self.system_path)

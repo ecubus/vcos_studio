@@ -37,11 +37,6 @@ class Logger(BaseLogger):
             self.add_handler(sink, level=LOGGER_LEVEL, format=DEFAULT_FORMAT, colorize=True)
         log_file_path = os.path.join(log_path, "vcos_{time:YYYY_MM_DD}.log")
         self.add_handler(log_file_path, level="DEBUG", format=DEFAULT_FORMAT)
-        self.add_handler(self.error_handler, level="ERROR", format=DEFAULT_FORMAT)
-
-    def error_handler(self, message):
-        if "ERROR" in message:
-            pass
 
 
 PERF_DEFAULT_FORMAT = (
@@ -55,10 +50,6 @@ class PerfLogger(BaseLogger):
     def init_perf_handler(self, perf_log_path, log_name):
         perf_log_path = os.path.join(perf_log_path, log_name)
         self.add_handler(perf_log_path, format=PERF_DEFAULT_FORMAT)
-
-    def error_handler(self, message):
-        if "ERROR" in message:
-            pass
 
 
 logger = Logger()

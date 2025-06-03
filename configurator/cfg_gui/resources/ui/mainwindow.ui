@@ -257,6 +257,45 @@ QPushButton:hover {	background-color:#e3f3fd;}</string>
                      </widget>
                     </item>
                     <item alignment="Qt::AlignLeft">
+                     <widget class="QPushButton" name="import_files_button">
+                      <property name="minimumSize">
+                       <size>
+                        <width>100</width>
+                        <height>0</height>
+                       </size>
+                      </property>
+                      <property name="font">
+                       <font>
+                        <family>Microsoft YaHei UI</family>
+                        <pointsize>10</pointsize>
+                       </font>
+                      </property>
+                      <property name="contextMenuPolicy">
+                       <enum>Qt::NoContextMenu</enum>
+                      </property>
+                      <property name="styleSheet">
+                       <string notr="true">QPushButton {background-color:rgba(0,0,0,0);}
+QPushButton:hover {	background-color:#e3f3fd;}</string>
+                      </property>
+                      <property name="text">
+                       <string> Input files   </string>
+                      </property>
+                      <property name="icon">
+                       <iconset resource="../images/images.qrc">
+                        <normaloff>:/import.svg</normaloff>:/import.svg</iconset>
+                      </property>
+                      <property name="autoDefault">
+                       <bool>true</bool>
+                      </property>
+                      <property name="default">
+                       <bool>true</bool>
+                      </property>
+                      <property name="flat">
+                       <bool>true</bool>
+                      </property>
+                     </widget>
+                    </item>
+                    <item alignment="Qt::AlignLeft">
                      <widget class="QPushButton" name="import_asw_arxml_button">
                       <property name="font">
                        <font>
@@ -490,11 +529,157 @@ QPushButton:hover {	background-color:#e3f3fd;}</string>
                    </font>
                   </property>
                   <property name="styleSheet">
-                   <string notr="true">background-color: rgba(0,0,0,0);
-color:rgb(0, 120, 215)</string>
+                   <string notr="true">background-color: rgba(0,0,0,0);color:rgb(0, 120, 215)</string>
                   </property>
                   <property name="text">
                    <string>Task Mapping Editor</string>
+                  </property>
+                 </widget>
+                </item>
+               </layout>
+              </item>
+             </layout>
+            </widget>
+            <widget class="QWidget" name="widget_4">
+             <property name="enabled">
+              <bool>true</bool>
+             </property>
+             <attribute name="title">
+              <string>Port Mapping</string>
+             </attribute>
+             <layout class="QVBoxLayout" name="verticalLayout_6">
+              <property name="spacing">
+               <number>0</number>
+              </property>
+              <property name="leftMargin">
+               <number>0</number>
+              </property>
+              <property name="topMargin">
+               <number>0</number>
+              </property>
+              <property name="rightMargin">
+               <number>0</number>
+              </property>
+              <property name="bottomMargin">
+               <number>0</number>
+              </property>
+              <item>
+               <layout class="QVBoxLayout" name="portMappingLayout" stretch="0">
+                <property name="spacing">
+                 <number>0</number>
+                </property>
+                <item>
+                 <widget class="QLabel" name="label_15">
+                  <property name="font">
+                   <font>
+                    <family>微软雅黑</family>
+                    <pointsize>12</pointsize>
+                   </font>
+                  </property>
+                  <property name="styleSheet">
+                   <string notr="true">background-color: rgba(0,0,0,0);color:rgb(0, 120, 215)</string>
+                  </property>
+                  <property name="text">
+                   <string>Port Mapping Editor</string>
+                  </property>
+                 </widget>
+                </item>
+               </layout>
+              </item>
+             </layout>
+            </widget>
+            <widget class="QWidget" name="widget_2">
+             <property name="enabled">
+              <bool>true</bool>
+             </property>
+             <attribute name="title">
+              <string>Data Mapping</string>
+             </attribute>
+             <layout class="QVBoxLayout" name="verticalLayout_7">
+              <property name="spacing">
+               <number>0</number>
+              </property>
+              <property name="leftMargin">
+               <number>0</number>
+              </property>
+              <property name="topMargin">
+               <number>0</number>
+              </property>
+              <property name="rightMargin">
+               <number>0</number>
+              </property>
+              <property name="bottomMargin">
+               <number>0</number>
+              </property>
+              <item>
+               <layout class="QVBoxLayout" name="dataMappingLayout" stretch="0">
+                <property name="spacing">
+                 <number>0</number>
+                </property>
+                <item>
+                 <widget class="QLabel" name="label_18">
+                  <property name="enabled">
+                   <bool>true</bool>
+                  </property>
+                  <property name="font">
+                   <font>
+                    <family>微软雅黑</family>
+                    <pointsize>12</pointsize>
+                   </font>
+                  </property>
+                  <property name="styleSheet">
+                   <string notr="true">background-color: rgba(0,0,0,0);color:rgb(0, 120, 215)</string>
+                  </property>
+                  <property name="text">
+                   <string>Data Mapping Editor</string>
+                  </property>
+                 </widget>
+                </item>
+               </layout>
+              </item>
+             </layout>
+            </widget>
+            <widget class="QWidget" name="widget_3">
+             <property name="enabled">
+              <bool>true</bool>
+             </property>
+             <attribute name="title">
+              <string>Service Mapping</string>
+             </attribute>
+             <layout class="QVBoxLayout" name="verticalLayout_8">
+              <property name="spacing">
+               <number>0</number>
+              </property>
+              <property name="leftMargin">
+               <number>0</number>
+              </property>
+              <property name="topMargin">
+               <number>0</number>
+              </property>
+              <property name="rightMargin">
+               <number>0</number>
+              </property>
+              <property name="bottomMargin">
+               <number>0</number>
+              </property>
+              <item>
+               <layout class="QVBoxLayout" name="serviceMappingLayout" stretch="0">
+                <property name="spacing">
+                 <number>0</number>
+                </property>
+                <item>
+                 <widget class="QLabel" name="label_12">
+                  <property name="font">
+                   <font>
+                    <family>微软雅黑</family>
+                    <pointsize>12</pointsize>
+                   </font>
+                  </property>
+                  <property name="styleSheet">
+                   <string notr="true">background-color: rgba(0,0,0,0);color:rgb(0, 120, 215)</string>
+                  </property>
+                  <property name="text">
+                   <string>Service Mapping Editor</string>
                   </property>
                  </widget>
                 </item>
@@ -627,6 +812,8 @@ p, li { white-space: pre-wrap; }
     </property>
     <addaction name="actionValidation"/>
     <addaction name="actionGenerator"/>
+    <addaction name="actionSWC_Generator"/>
+    <addaction name="actionUpdate"/>
    </widget>
    <widget class="QMenu" name="menuProject">
     <property name="title">
@@ -732,6 +919,15 @@ p, li { white-space: pre-wrap; }
     <string>Validation</string>
    </property>
   </action>
+  <action name="actionUpdate">
+   <property name="icon">
+    <iconset resource="../images/images.qrc">
+     <normaloff>:/update.svg</normaloff>:/update.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Update</string>
+   </property>
+  </action>
   <action name="actionProject_Setting">
    <property name="icon">
     <iconset resource="../images/images.qrc">
@@ -748,6 +944,15 @@ p, li { white-space: pre-wrap; }
    </property>
    <property name="text">
     <string>Close</string>
+   </property>
+  </action>
+    <action name="actionSWC_Generator">
+   <property name="icon">
+    <iconset resource="../images/images.qrc">
+     <normaloff>:/swc_generator.svg</normaloff>:/swc_generator.svg</iconset>
+   </property>
+   <property name="text">
+    <string>SWC Generator</string>
    </property>
   </action>
   <action name="actionImport">

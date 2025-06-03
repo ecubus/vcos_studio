@@ -15,6 +15,7 @@
 #include "Rte_Type.h"
 
 #define RTE_START_SEC_CODE
+
 #include "rte_memmap.h"
 
 /*
@@ -34,21 +35,6 @@ FUNC(void, RTE_CODE) Rte_COMCbkRxTOut_{{signa_name}}_Rx(void);
     {%- endif %}
 {%- endfor %}
 
-{#-}
-{%- set com_cbk_cfg_dict = get_rte_com_cbk_dict() %}
-{%- for signa_name, com_cbk_cfg in com_cbk_cfg_dict.items() %}
-FUNC(void, RTE_CODE) Rte_COMCbk_{{signa_name}}_Rx(void);
-    {%- set alive_timeout_cfg = com_cbk_cfg.get("alive_timeout_cfg", {}) %}
-    {%- if alive_timeout_cfg not in [None, {}] %}
-FUNC(void, RTE_CODE) Rte_COMCbkRxTOut_{{signa_name}}_Rx(void);
-    {%- endif%}
-{%- endfor %}
-#}
-
-{#
-{% set osa_com_update_flags_element_dict = get_rte_cross_partition_data_mapping_update_flags_element_dict("Rte") %}
-{%- if osa_com_update_flags_element_dict %}
-#}
 /*
  * RTE Schedulable entity for COM-Access from different partitions
  */
@@ -58,34 +44,6 @@ FUNC(void, RTE_CODE) {{proxy_name}}(void);
 
 #define RTE_STOP_SEC_CODE
 #include "rte_memmap.h"
-
-{#
-{% endif%}
-#}
-{#}
-{%- set callbacks = get_nvblcok_component_callbacks() %}
-{%- if callbacks %}
-/*
- * NvM-Callback for synchronous copying of the mirror buffer to and from the NvM
- */
-{%- for callback in callbacks %}
-Std_ReturnType Rte_SetMirror_{{callback["component"]}}_{{callback["nv_descriptor"]}}(const void *NVMBuffer);
-Std_ReturnType Rte_GetMirror_{{callback["component"]}}_{{callback["nv_descriptor"]}}(void *NVMBuffer);
-{%- endfor %}
-{%- endif %}
-
-{%- set  nv_descriptor_dict = get_nv_descriptor_with_dirtflag_from_swc_list() %}
-{%- if nv_descriptor_dict|length > 0 %}
-/*
- * NvM-Callbacks for forwarding notifications from the NvM to the SW-Cs
- */
-{%- for appl_name, nv_descriptor_list in nv_descriptor_dict.items() %}
-{%- for nv_descriptor in nv_descriptor_list %}
-Std_ReturnType Rte_NvMNotifyJobFinished_{{nv_descriptor["swc_name"]}}_{{nv_descriptor["name"]}}(uint8 ServiceId, NvM_RequestResultType JobResult);
-{%- endfor %}
-{%- endfor %}
-{%- endif %}
-{#}
 
 #endif /* RTE_CBK_H */
 {# black line #}

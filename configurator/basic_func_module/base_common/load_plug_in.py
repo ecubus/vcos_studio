@@ -19,6 +19,8 @@ from importlib import import_module
 from basic_func_module.base_logger import logger
 from basic_func_module.base_common.singleton import Singleton
 
+ROOT_PACKAGE = "components"
+
 
 class LoadPlugIn(Singleton):
 
@@ -34,7 +36,8 @@ class LoadPlugIn(Singleton):
     def load_module(cls, module_name: str, module_path: str):
         assert cls.instance
         if module_name not in cls.instance.module_name_map:
-            logger.error(f"Load module failed, module_name: {module_name} is not exist.")
+            logger.debug(f"Load module failed, module_name: {module_name} is not exist.")
+            return None
         module_prefix = cls.instance.module_name_map[module_name]
         module_path = f"{module_prefix}.{module_path}"
         if module_path in cls.instance.module_loaded_cache:
@@ -52,8 +55,9 @@ class LoadPlugIn(Singleton):
         assert cls.instance
         plug_in_path = os.path.abspath(plug_in_path).replace("\\", "/")
         if module_name:
-            cls.instance.module_name_map[module_name] = os.path.basename(plug_in_path)
-            plug_in_base_path = os.path.dirname(plug_in_path)
+            prefix, module = plug_in_path.split(f"/{ROOT_PACKAGE}/")
+            cls.instance.module_name_map[module_name] = f"{ROOT_PACKAGE}.{module.replace('/', '.')}"
+            plug_in_base_path = prefix
         else:
             plug_in_base_path = plug_in_path
         if not os.path.exists(plug_in_base_path):

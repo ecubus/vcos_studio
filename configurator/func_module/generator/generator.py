@@ -23,6 +23,9 @@ from basic_func_module.autosar_utils.utils import get_mod_autosar_version
 from func_module.health_monitor.logger import logger
 from func_module.generator.bsw import generator as bsw_generator
 from func_module.generator.rte import generator as rte_generator
+from func_module.generator.appl import generator as appl_generator
+from func_module.generator.cmake import generator as cmake_generator
+from func_module.generator.common.user_code_extract import UserCodeExtract
 from func_module.module_management.arxml_handler.arxml_parse_save import ArxmlParseHandler
 
 from func_module.generator import parser as codegen_parser
@@ -147,7 +150,11 @@ def generate_c_code(
         sys_info_dict, cfg_info_dict, ecuc_autosar_dict, module_cfg, mcal_module_codegen_cmd_line_dict, progress_signal
     )
 
-    codegen_result = report_codegen_result(rte_result_dict, darwin_result_dict, bsw_result_dict, codegen_module_list)
+    cmake_result_dict = cmake_generator.generate_project_cmake(sys_info_dict)
+
+    codegen_result = report_codegen_result(
+        cmake_result_dict, rte_result_dict, darwin_result_dict, bsw_result_dict, codegen_module_list
+    )
     logger.ui_info(f"Finish the code generator of the {sys_info_dict['project']}")
     if codegen_result:
         cfg_info_dict["bsw"] = bsw_ecuc_class_to_bsw_ecuc_dict(ecuc_autosar_dict)
@@ -224,13 +231,49 @@ def get_sys_info_dict(sys_info_class, codegen_autosar_dict=None):
     return sys_info_dict
 
 
+def generate_swc_template(sys_info_class, codegen_autosar_dict, swc_app_list, result_signal=None):
+    appl_codegen_result = False
+    try:
+        sys_info_dict = get_sys_info_dict(sys_info_class, codegen_autosar_dict=codegen_autosar_dict)
+        enable_bsw_instance = True
+        codegen_module_list = sys_info_dict.get("modules_info", {}).get("codegen_module_list", [])
+        enabled_module_list = sys_info_dict.get("modules_info", {}).get("enabled_module_list", [])
+        asw_autosar_dict = codegen_autosar_dict["asw_autosar_dict"]
+        cfg_info_dict = {"asw": "", "rte": {}, "bsw": {}, "dbc": [], "ldf": [], "cdd": {}, "eb": {}}
+        if "Rte" not in codegen_module_list:
+            codegen_module_list.append("Rte")
+        if not codegen_parser.get_config_dict(
+            codegen_module_list,
+            cfg_info_dict,
+            asw_autosar_dict,
+            codegen_autosar_dict["ecuc_autosar_dict"],
+            codegen_autosar_dict["system_autosar_dict"],
+            codegen_autosar_dict["internal_behavior_autosar_dict"],
+            {},
+            enabled_module_list,
+            enable_bsw_instance,
+            codegen_autosar_dict["bswmd_autosar_dict"],
+        ):
+            return appl_codegen_result
+        user_code = UserCodeExtract.get_user_code(sys_info_dict, asw_autosar_dict, swc_app_list)
+        appl_codegen_result = appl_generator.generate(
+            sys_info_dict, cfg_info_dict, asw_autosar_dict, user_code, swc_app_list
+        )
+    except Exception:
+        logger.exception("generate_swc_template")
+    return appl_codegen_result
+
+
 def get_swc_list_for_template_gereration(asw_autosar_dict):
     return codegen_parser.get_swc_list(asw_autosar_dict)
 
 
-def report_codegen_result(rte_result_dict, darwin_result_dict, bsw_result_dict, codegen_module_list):
+def report_codegen_result(cmake_result_dict, rte_result_dict, darwin_result_dict, bsw_result_dict, codegen_module_list):
     codegen_result = True
     result_dict = {}
+
+    if cmake_result_dict:
+        result_dict.update(cmake_result_dict)
 
     if rte_result_dict:
         result_dict.update(rte_result_dict)

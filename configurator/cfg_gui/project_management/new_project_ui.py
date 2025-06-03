@@ -16,7 +16,7 @@
 
 import os
 from PySide6.QtWidgets import QFileDialog, QMessageBox
-from cfg_gui.project_management.project_base_ui import ProjectUIBase
+from cfg_gui.project_management.project_base_ui import ProjectUIBase, CONFIGURATOR_PLUG_IN_PATH
 
 CUR_DIR = os.path.dirname(__file__)
 
@@ -49,10 +49,9 @@ class NewProjectUI(ProjectUIBase):
             self.project_file_path = os.path.abspath(os.path.join(self.project_path, f"{project_name}.vcosproject"))
         self.lineEditProjectFilePath.setText(self.project_file_path)
         self.lineEditProjectFilePath.setCursorPosition(0)
-        origin_path = os.path.abspath(os.path.join(self.project_file_path, ".."))
-        default_cfg_path = self.get_default_cfg_path("examples", origin_path)
+        default_cfg_path = self.get_default_cfg_path(CONFIGURATOR_PLUG_IN_PATH, self.project_path)
         if default_cfg_path != "":
             self.deafult_config_path = default_cfg_path
         else:
-            self.deafult_config_path = os.path.abspath(os.path.join(origin_path, "..", "..", ".."))
+            self.deafult_config_path = self.project_path
         self.set_line_edit_default()

@@ -179,12 +179,14 @@ class ScheduleTableModel(QtCore.QAbstractTableModel):
         col = coord["col"]
         row = coord["row"]
         if col < len(self.table_data) and row < len(self.table_data[col]):
+            if parent.data():
+                self.set_group(row, col, self.get_group(parent.row(), parent.column()))
+            else:
+                self.delete_group(row, col)
             value = self.table_data[col][row]
             self.table_data[col][row] = parent.data()
             self.setData(parent, value, Qt.ItemDataRole.EditRole)
             group = self.get_group(row, col)
-            if self.table_data[col][row]:
-                self.set_group(row, col, self.get_group(parent.row(), parent.column()))
             parent_row = parent.row() if group == -1 else group
             self.add_group(parent_row, parent_row + 1, parent.column())
             return True
@@ -202,12 +204,34 @@ class ScheduleTableModel(QtCore.QAbstractTableModel):
             task_groups = {vv: v.index(vv) for v in task_offset_list for vv in v[1:] if vv}
         else:
             task_groups = sch_tbl_cfg["task_groups"]
+            self.update_task_groups(task_offset_list, task_groups)
         self.beginResetModel()
         self.init_model_data(max_row)
         self.table_data[1 : len(table_data) + 1] = table_data
         self.sch_tbl_cfg["task_groups"] = task_groups
         self.endResetModel()
         return True
+
+    def update_task_groups(self, task_offset_list, task_groups):
+        task_first_list = {task_list[1]: task_list[1:] for task_list in task_offset_list}
+        for task_name, task_list in task_first_list.items():
+            if task_name not in task_groups:
+                continue
+            index = 1
+            previous_group = -1
+            for task_name in task_list:
+                if task_name not in task_groups:
+                    continue
+                if previous_group == -1:
+                    previous_group = task_groups[task_name]
+                    task_groups[task_name] = index
+                else:
+                    if previous_group == task_groups[task_name]:
+                        task_groups[task_name] = index
+                    else:
+                        index += 1
+                        previous_group = task_groups[task_name]
+                        task_groups[task_name] = index
 
     def sort_first_row(self):
         self.beginResetModel()
@@ -307,7 +331,11 @@ class ScheduleTableModel(QtCore.QAbstractTableModel):
             self.endResetModel()
 
     def add_group(self, row_start, row_end, col):
-        group = self.get_group(row_start - 1, col) + 1
+        group = 0
+        for row in range(row_start - 1, 0, -1):
+            if self.table_data[col][row]:
+                group = self.get_group(row, col) + 1
+                break
         self.beginResetModel()
         for row in range(row_start, self.rowCount()):
             if row < row_end:
@@ -317,8 +345,6 @@ class ScheduleTableModel(QtCore.QAbstractTableModel):
                     self.set_group(row, col, group, True)
             else:
                 group = self.get_group(row, col)
-                if row_start - row_end + 1 == 0:
-                    group += 1
                 group += row_start - row_end + 1
                 self.set_group(row, col, group, True)
         self.endResetModel()
@@ -327,13 +353,23 @@ class ScheduleTableModel(QtCore.QAbstractTableModel):
         count = -1
         group_base = self.get_group(row, col)
         self.beginResetModel()
-        for row in range(1, self.rowCount()):
+        for row in range(group_base, self.rowCount()):
             group = self.get_group(row, col)
-            if group == group_base:
-                count += 1
             if group == -1:
                 continue
+            if group == group_base:
+                count += 1
             self.set_group(row, col, group + count, True)
+        self.endResetModel()
+
+    def delete_group(self, row, col):
+        self.beginResetModel()
+        self.sch_tbl_cfg["task_groups"].pop(self.table_data[col][row], None)
+        for row in range(row + 1, self.rowCount()):
+            group = self.get_group(row, col)
+            if group == -1:
+                continue
+            self.set_group(row, col, group - 1, True)
         self.endResetModel()
 
 
@@ -738,10 +774,3 @@ class SecRuntimeSystemOsConfigurationScheduleTableWidget(QtWidgets.QWidget):
         with self.lock:
             table_offset_list, sch_tbl_cfg = self.sch_tbl_model.get_sch_tbl_ui_data()
             self.callback("save_schedule_table_ui_data", table_offset_list, sch_tbl_cfg)
-
-
-if __name__ == "__main__":
-    app = QtWidgets.QApplication([])
-    widget = SecRuntimeSystemOsConfigurationScheduleTableWidget({}, lambda *args, **kwargs: None)
-    widget.show()
-    app.exec()

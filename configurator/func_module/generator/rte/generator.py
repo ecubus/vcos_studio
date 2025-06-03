@@ -53,8 +53,12 @@ def get_rendering_context(file_template_name, input_dict, sys_config=None, appl=
             "task_mappings": input_dict["appl_to_task_dict"][appl],
             "asw_cfg": osapplication_asw_cfg[appl] if appl in osapplication_asw_cfg else {},
             "appl_name": appl,
+            "mode_declaration_group": input_dict["mode_declaration_group"],
             "osapplication_asw_cfg": osapplication_asw_cfg,
+            "com_module_osapplication": input_dict.get("com_module_osapplication", None),
             "appls_asw_cfg": input_dict["asw_cfg"],
+            "sr_required_com_specs_dict": input_dict.get("sr_required_com_specs_dict", {}),
+            "sr_dm_glob_vars": input_dict.get("sr_dm_glob_vars", {}),
             "RteGeneration_dict": input_dict.get("RteGeneration", {}),
             "appl_info": input_dict.get("appl_dict", {}).get(appl, {}),
             "alarm_dict": input_dict.get("alarm_dict", {}),
@@ -71,9 +75,17 @@ def get_rendering_context(file_template_name, input_dict, sys_config=None, appl=
             "core_to_task_dict": input_dict["core_to_task_dict"],
             "core_to_alarm_dict": input_dict["core_to_alarm_dict"],
             "task_to_st_dict": input_dict["task_to_st_dict"],
+            "signals_and_signalgroups": input_dict["signals_and_signalgroups"],
+            "data_received_event": input_dict["data_received_event"],
+            "port_event_id_and_task_id": input_dict["port_event_id_and_task_id"],
             "asw_cfg": input_dict["asw_cfg"],
             "appl_list": input_dict["appl_list"],
+            "mode_declaration_group": input_dict["mode_declaration_group"],
             "osapplication_asw_cfg": input_dict["osapplication_asw_cfg"],
+            "com_module_osapplication": input_dict.get("com_module_osapplication", None),
+            "com_core_id": input_dict.get("com_core_id", None),
+            "sr_required_com_specs_dict": input_dict.get("sr_required_com_specs_dict", {}),
+            "sr_dm_glob_vars": input_dict.get("sr_dm_glob_vars", {}),
             "RteGeneration_dict": input_dict.get("RteGeneration", {}),
             "signal_dict": input_dict.get("signal_dict", {}),
             "task_mappings": input_dict.get("task_mappings", {}),
@@ -84,11 +96,17 @@ def get_rendering_context(file_template_name, input_dict, sys_config=None, appl=
         config = {
             "sys_cfg": sys_config,
             "core_id_list": input_dict["core_id_list"],
+            "datatypes": input_dict["impl_datatype_dict"],
             "asw_cfg": input_dict["asw_cfg"],
             "appl_list": input_dict["appl_list"],
             "osapplication_asw_cfg": osapplication_asw_cfg,
+            "com_module_osapplication": input_dict.get("com_module_osapplication", None),
+            "com_core_id": input_dict.get("com_core_id", None),
             "core_to_appl_dict": input_dict.get("core_to_appl_dict", {}),
             "appls_asw_cfg": input_dict["asw_cfg"],
+            "signal_dict": input_dict.get("signal_dict", {}),
+            "sr_required_com_specs_dict": input_dict.get("sr_required_com_specs_dict", {}),
+            "sr_dm_glob_vars": input_dict.get("sr_dm_glob_vars", {}),
             "RteGeneration_dict": input_dict.get("RteGeneration", {}),
             "task_mappings": input_dict.get("task_mappings", {}),
             "cal_prm": input_dict.get("cal_prm", {}),
@@ -194,12 +212,15 @@ def render_files(sys_config, template_dict, config_dict, user_code, ecuc_autosar
     output_dir = config_dict.get("output_dir")
     input_dict = config_dict["input_dict"]
     render_rte_type_file(sys_config, template_dict, input_dict, output_dir)
+    render_rte_swc_type_file(sys_config, template_dict, input_dict, output_dir)
     render_rte_osapplication_file(sys_config, template_dict, input_dict, output_dir, ecuc_autosar_dict)
     render_rte_main_file(sys_config, template_dict, input_dict, output_dir)
     render_rte_file(sys_config, template_dict, input_dict, output_dir)
     render_rte_cbk_file(sys_config, template_dict, input_dict, output_dir)
     render_rte_schm_file(sys_config, template_dict, input_dict, output_dir, "Rte")
     render_rte_swc_h_file(sys_config, template_dict, input_dict, output_dir)
+    render_rte_dlog_file(sys_config, template_dict, input_dict, output_dir, ecuc_autosar_dict)
+    render_rte_user_type_h_file(sys_config, template_dict, input_dict, output_dir)
     render_rte_hook_rtm_file(sys_config, template_dict, input_dict, output_dir, ecuc_autosar_dict)
     render_rte_hook_file(sys_config, template_dict, input_dict, output_dir, ecuc_autosar_dict)
 
@@ -391,6 +412,41 @@ def render_rte_type_file(sys_config, template_dict, input_dict, output_dir):
         logger.info("Finish generating Rte_Type.h file")
 
 
+def render_rte_user_type_h_file(sys_config, template_dict, input_dict, output_dir):
+    """
+    Render Rte_Type.h template.
+    """
+    template: Template = template_dict.get("Rte_UserTypes.h.jinja2")
+    if template is not None:
+        config = {"sys_cfg": sys_config}
+        file_path = os.path.join(output_dir, "Rte", "Rte_UserTypes.h")
+        logger.debug("Start generating Rte_UserTypes.h file ......")
+        with open(file_path, "w", encoding="utf-8") as f:
+            f.write(template.render(config))
+        logger.info("Finish generating Rte_UserTypes.h file")
+
+
+def render_rte_swc_type_file(sys_config, template_dict, input_dict, output_dir):
+    """
+    Render Application header template_file.
+    """
+    template: Template = template_dict.get("Rte_Swc_Type.h.jinja2")
+    if template is not None:
+        for swc in input_dict["asw_cfg"].values():
+            if swc.get("type", "") == "NvBlockComponent":
+                continue
+            if swc.get("type", "") in AutosarUtils.NO_GEN_FILE_APPL_COMPONENT_TYPE:
+                continue
+            swc_name = swc["name"]
+            config = {"sys_cfg": sys_config, "swc": swc, "mode_declaration_group": input_dict["mode_declaration_group"]}
+            swc_type_h_relative_path = f"Rte/Rte_{swc_name}_Type.h"
+            swc_type_h_path = os.path.join(output_dir, swc_type_h_relative_path)
+            logger.debug(f"Start generating Rte_{swc_name}_Type.h file")
+            with open(swc_type_h_path, "w", encoding="utf-8") as f:
+                f.write(template.render(config))
+            logger.info(f"Finish generating Rte_{swc_name}_Type.h file")
+
+
 def render_rte_swc_h_file(sys_config, template_dict, input_dict, output_dir):
     """
     Render Application header template_file.
@@ -428,9 +484,14 @@ def render_rte_cbk_file(sys_config, template_dict, input_dict, output_dir):
     if template is not None:
         config = {
             "sys_cfg": sys_config,
+            "signals_and_signalgroups": input_dict["signals_and_signalgroups"],
+            "data_received_event": input_dict["data_received_event"],
             "appl_list": input_dict["appl_list"],
             "asw_cfg": input_dict["asw_cfg"],
             "osapplication_asw_cfg": input_dict.get("osapplication_asw_cfg", {}),
+            "com_module_osapplication": input_dict.get("com_module_osapplication", None),
+            "com_core_id": input_dict.get("com_core_id", None),
+            "sr_required_com_specs_dict": input_dict.get("sr_required_com_specs_dict", {}),
             "RteGeneration_dict": input_dict.get("RteGeneration", {}),
             "signal_dict": input_dict.get("signal_dict", {}),
         }
@@ -476,3 +537,37 @@ def render_rte_schm_file(sys_config, template_dict, input_dict, output_dir, pare
             with open(file_path, "w", encoding="utf-8") as f:
                 f.write(template.render(config))
             logger.info(f"Finish generating {file_name} file")
+
+
+def render_rte_dlog_file(sys_config, template_dict, input_dict, output_dir, ecuc_autosar_dict):
+    template: Template = template_dict.get("Rte_Dlog.c.jinja2")
+    if template is not None:
+        file_path = os.path.join(output_dir, "Rte/Rte_Dlog.c")
+        logger.debug("Start generating Rte_Dlog.c file")
+        with open(file_path, "w", encoding="utf-8") as out_stream:
+            config = {
+                "sys_cfg": sys_config,
+                "asw_cfg": input_dict["asw_cfg"],
+                "ecuc_config": ecuc_autosar_dict,
+            }
+            out_stream.write(template.render(config))
+        logger.info("Finish generating Rte_Dlog.c file")
+
+    template: Template = template_dict.get("Rte_Dlog.h.jinja2")
+    if template is not None:
+        file_path = os.path.join(output_dir, "Rte/Rte_Dlog.h")
+        logger.debug("Start generating Rte_Dlog.h file")
+        with open(file_path, "w", encoding="utf-8") as out_stream:
+            config = {
+                "sys_cfg": sys_config,
+                "asw_cfg": input_dict["asw_cfg"],
+                "data_received_event": input_dict["data_received_event"],
+                "osapplication_asw_cfg": input_dict.get("osapplication_asw_cfg", {}),
+                "com_module_osapplication": input_dict.get("com_module_osapplication", None),
+                "com_core_id": input_dict.get("com_core_id", None),
+                "signal_dict": input_dict.get("signal_dict", {}),
+                "sr_required_com_specs_dict": input_dict.get("sr_required_com_specs_dict", {}),
+                "RteGeneration_dict": input_dict.get("RteGeneration", {}),
+            }
+            out_stream.write(template.render(config))
+        logger.info("Finish generating Rte_Dlog.h file")

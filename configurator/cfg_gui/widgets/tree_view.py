@@ -958,16 +958,15 @@ class ArgQTreeView(QTreeView):
             module = importlib.import_module(f"cfg_gui.widgets.sec_widgets.{widget_type}")
             custom_widget_class = getattr(module, class_name)
             self.param_widget = custom_widget_class(self.main_window, show_data_dict, item.get_path(), self.callback)
-            setattr(
-                self.param_widget,
-                "create_sub_container_rules",
-                self.secondary_menu_cfg_of_tab["right_click_rules"]["create_sub_container_rules"],
-            )
+            if hasattr(self.param_widget, "create_sub_container_rules"):
+                self.param_widget.create_sub_container_rules = self.secondary_menu_cfg_of_tab["right_click_rules"][
+                    "create_sub_container_rules"
+                ]
         except KeyError:
             logger.error(f"Error: {widget_type} class not found.")
             self.param_widget = QWidget()
-        except ImportError:
-            logger.error(f"Error: Module {widget_type} could not be imported.")
+        except ImportError as e:
+            logger.error(f"Error: Module {widget_type} could not be imported. {e}")
             self.param_widget = QWidget()
 
     def show_param_widget(self, current: QModelIndex):

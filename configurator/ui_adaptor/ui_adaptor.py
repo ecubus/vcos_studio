@@ -117,6 +117,11 @@ class UIAdaptor:
                 "enable_task": True,
                 "enable_progress": True,
             },
+            "update_action": {
+                "action_func": self.function_logic_layer.update_vcos_service_arxml,
+                "enable_task": True,
+                "enable_progress": True,
+            },
             "close_action": {
                 "action_func": self.function_logic_layer.save_vcos_project_config_file,
                 "enable_task": True,
@@ -217,6 +222,212 @@ class UIAdaptor:
                 "enable_task": True,
                 "enable_progress": False,
             },
+            # PortMapping begin
+            "port_mapping_rte_right_click_connect": {
+                "action_func": self.function_logic_layer.port_mapping_func.cbk_rte_right_click_connect,
+                "enable_task": False,
+                "enable_progress": False,
+            },
+            "port_mapping_rte_right_click_disconnect": {
+                "action_func": self.function_logic_layer.port_mapping_func.cbk_rte_right_click_disconnect,
+                "enable_task": False,
+                "enable_progress": False,
+            },
+            "port_mapping_first_level_finish": {
+                "action_func": self.function_logic_layer.port_mapping_func.cbk_first_level_finish,
+                "enable_task": False,
+                "enable_progress": False,
+            },
+            "port_mapping_rte_open_assistant": {
+                "action_func": self.function_logic_layer.port_mapping_func.cbk_rte_open_assistant,
+                "enable_task": False,
+                "enable_progress": False,
+            },
+            "port_mapping_first_level_next": {
+                "action_func": self.function_logic_layer.port_mapping_func.cbk_first_level_next,
+                "enable_task": False,
+                "enable_progress": False,
+            },
+            "port_mapping_second_level_next": {
+                "action_func": self.function_logic_layer.port_mapping_func.cbk_second_level_next,
+                "enable_task": False,
+                "enable_progress": False,
+            },
+            "port_mapping_third_level_double_click_component": {
+                "action_func": self.function_logic_layer.port_mapping_func.cbk_third_level_double_click_component,
+                "enable_task": False,
+                "enable_progress": False,
+            },
+            "port_mapping_third_level_double_click_port": {
+                "action_func": self.function_logic_layer.port_mapping_func.cbk_third_level_double_click_port,
+                "enable_task": False,
+                "enable_progress": False,
+            },
+            "port_mapping_third_level_finish": {
+                "action_func": self.function_logic_layer.port_mapping_func.cbk_third_level_finish,
+                "enable_task": False,
+                "enable_progress": False,
+            },
+            "port_mapping_third_level_component_finish": {
+                "action_func": self.function_logic_layer.port_mapping_func.cbk_third_level_component_finish,
+                "enable_task": False,
+                "enable_progress": False,
+            },
+            "port_mapping_third_level_port_finish": {
+                "action_func": self.function_logic_layer.port_mapping_func.cbk_third_level_port_finish,
+                "enable_task": False,
+                "enable_progress": False,
+            },
+            "port_mapping_get_main_table_data": {
+                "action_func": self.function_logic_layer.port_mapping_func.cbk_get_main_table_data,
+                "enable_task": False,
+                "enable_progress": False,
+            },
+            "port_mapping_get_all_component_name_to_update": {
+                "action_func": self.function_logic_layer.port_mapping_func.cbk_get_all_component_name_to_update,
+                "enable_task": False,
+                "enable_progress": False,
+            },
+            "update_port_mapping_table_after_import_asw": {
+                "action_func": self.function_logic_layer.port_mapping_func.update_port_mapping_table_after_import_asw,
+                "enable_task": False,
+                "enable_progress": False,
+            },
+            # PortMapping end
+            # ServiceMapping begin
+            "service_mapping_rte_right_click_connect": {
+                "action_func": self.function_logic_layer.service_mapping_func.cbk_rte_right_click_connect,
+                "enable_task": False,
+                "enable_progress": False,
+            },
+            "service_mapping_rte_right_click_disconnect": {
+                "action_func": self.function_logic_layer.service_mapping_func.cbk_rte_right_click_disconnect,
+                "enable_task": False,
+                "enable_progress": False,
+            },
+            "service_mapping_first_level_finish": {
+                "action_func": self.function_logic_layer.service_mapping_func.cbk_first_level_finish,
+                "enable_task": False,
+                "enable_progress": False,
+            },
+            "service_mapping_rte_open_assistant": {
+                "action_func": self.function_logic_layer.service_mapping_func.cbk_rte_open_assistant,
+                "enable_task": False,
+                "enable_progress": False,
+            },
+            "service_mapping_first_level_next": {
+                "action_func": self.function_logic_layer.service_mapping_func.cbk_first_level_next,
+                "enable_task": False,
+                "enable_progress": False,
+            },
+            "service_mapping_second_level_next": {
+                "action_func": self.function_logic_layer.service_mapping_func.cbk_second_level_next,
+                "enable_task": False,
+                "enable_progress": False,
+            },
+            "service_mapping_third_level_double_click_component": {
+                "action_func": self.function_logic_layer.service_mapping_func.cbk_third_level_double_click_component,
+                "enable_task": False,
+                "enable_progress": False,
+            },
+            "service_mapping_third_level_double_click_port": {
+                "action_func": self.function_logic_layer.service_mapping_func.cbk_third_level_double_click_port,
+                "enable_task": False,
+                "enable_progress": False,
+            },
+            "service_mapping_third_level_finish": {
+                "action_func": self.function_logic_layer.service_mapping_func.cbk_third_level_finish,
+                "enable_task": False,
+                "enable_progress": False,
+            },
+            "service_mapping_third_level_component_finish": {
+                "action_func": self.function_logic_layer.service_mapping_func.cbk_third_level_component_finish,
+                "enable_task": False,
+                "enable_progress": False,
+            },
+            "service_mapping_third_level_port_finish": {
+                "action_func": self.function_logic_layer.service_mapping_func.cbk_third_level_port_finish,
+                "enable_task": False,
+                "enable_progress": False,
+            },
+            "service_mapping_get_main_table_data": {
+                "action_func": self.function_logic_layer.service_mapping_func.cbk_get_main_table_data,
+                "enable_task": False,
+                "enable_progress": False,
+            },
+            "service_mapping_get_all_service_component_name_to_update": {
+                "action_func": self.function_logic_layer.service_mapping_func.cbk_get_all_service_component_name_to_update,
+                "enable_task": False,
+                "enable_progress": False,
+            },
+            "update_service_mapping_table_after_import_asw": {
+                "action_func": self.function_logic_layer.service_mapping_func.update_service_mapping_table_after_import_asw,
+                "enable_task": False,
+                "enable_progress": False,
+            },
+            # ServiceMapping end
+            # DataMapping begin
+            "data_mapping_get_main_table_data": {
+                "action_func": self.function_logic_layer.data_mapping_func.cbk_get_main_table_data,
+                "enable_task": False,
+                "enable_progress": False,
+            },
+            "data_mapping_rte_right_click_connect": {
+                "action_func": self.function_logic_layer.data_mapping_func.get_data_mapping_editor_map_ui_data_from_editor_main_ui,
+                "enable_task": False,
+                "enable_progress": False,
+            },
+            "data_mapping_editor_main_ui_right_click_remove_mapping": {
+                "action_func": self.function_logic_layer.data_mapping_func.get_data_mapping_editor_main_ui_data_right_click_remove_mapping,
+                "enable_task": False,
+                "enable_progress": False,
+            },
+            "data_mapping_first_level_finish": {
+                "action_func": self.function_logic_layer.data_mapping_func.get_data_mapping_editor_main_ui_data_from_editor_map_ui,
+                "enable_task": False,
+                "enable_progress": False,
+            },
+            "data_mapping_editor_map_ui_data_from_editor_signal_ui": {
+                "action_func": self.function_logic_layer.data_mapping_func.get_data_mapping_editor_map_ui_data_from_editor_signal_ui,
+                "enable_task": False,
+                "enable_progress": False,
+            },
+            "data_mapping_editor_signal_ui_data_from_editor_map_ui": {
+                "action_func": self.function_logic_layer.data_mapping_func.get_data_mapping_editor_signal_ui_data_from_editor_map_ui,
+                "enable_task": False,
+                "enable_progress": False,
+            },
+            "data_mapping_assistant_main_ui_data_open_assistant": {
+                "action_func": self.function_logic_layer.data_mapping_func.get_data_mapping_assistant_main_ui_data_open_assistant,
+                "enable_task": False,
+                "enable_progress": False,
+            },
+            "data_mapping_assistant_map_ui_data_after_selecting_port": {
+                "action_func": self.function_logic_layer.data_mapping_func.get_data_mapping_assistant_map_ui_data_after_selecting_port,
+                "enable_task": False,
+                "enable_progress": False,
+            },
+            "data_mapping_assistant_signal_ui_data": {
+                "action_func": self.function_logic_layer.data_mapping_func.get_data_mapping_assistant_signal_ui_data,
+                "enable_task": False,
+                "enable_progress": False,
+            },
+            "data_mapping_assistant_map_ui_data_after_selecting_signal": {
+                "action_func": self.function_logic_layer.data_mapping_func.get_data_mapping_assistant_map_ui_data_after_selecting_signal,
+                "enable_task": False,
+                "enable_progress": False,
+            },
+            "data_mapping_editor_main_ui_data_after_assistant_mapping": {
+                "action_func": self.function_logic_layer.data_mapping_func.get_data_mapping_editor_main_ui_data_after_assistant_mapping,
+                "enable_task": False,
+                "enable_progress": False,
+            },
+            "update_flatextract_data_mapping_after_import": {
+                "action_func": self.function_logic_layer.data_mapping_func.update_flatextract_data_mapping_after_import,
+                "enable_task": False,
+                "enable_progress": False,
+            },
+            # DataMapping end
             # module_management begin
             "apply_module_renaming": {
                 "action_func": self.function_logic_layer.module_manage_logic.change_module_name,
@@ -260,6 +471,96 @@ class UIAdaptor:
             },
             # module_management end
             # import files begin
+            "get_imported_excel": {
+                "action_func": self.function_logic_layer.import_files_logic.get_imported_excel,
+                "enable_task": False,
+                "enable_progress": False,
+            },
+            "get_imported_com_excel": {
+                "action_func": self.function_logic_layer.import_files_logic.get_imported_com_excel,
+                "enable_task": False,
+                "enable_progress": False,
+            },
+            "init_import_files_ui": {
+                "action_func": self.function_logic_layer.import_files_logic.init_import_files_ui,
+                "enable_task": True,
+                "enable_progress": True,
+            },
+            "parser_dbc_and_get_original_data_action": {
+                "action_func": self.function_logic_layer.import_files_logic.import_dbc,
+                "enable_task": True,
+                "enable_progress": True,
+            },
+            "parser_files_get_original_data_action": {
+                "action_func": self.function_logic_layer.import_files_logic.import_files,
+                "enable_task": True,
+                "enable_progress": True,
+            },
+            "parser_replace_files_get_original_data_action": {
+                "action_func": self.function_logic_layer.import_files_logic.replace_files,
+                "enable_task": True,
+                "enable_progress": True,
+            },
+            "node_selected_changed": {
+                "action_func": self.function_logic_layer.import_files_logic.node_selected_changed,
+                "enable_task": False,
+                "enable_progress": False,
+            },
+            "remove_imported_files": {
+                "action_func": self.function_logic_layer.import_files_logic.remove_files,
+                "enable_task": False,
+                "enable_progress": False,
+            },
+            "apply_dbc_ldf_import": {
+                "action_func": self.function_logic_layer.import_files_logic.apply_dbc_ldf_import,
+                "enable_task": True,
+                "enable_progress": True,
+            },
+            "check_before_apply": {
+                "action_func": self.function_logic_layer.import_files_logic.check_before_apply,
+                "enable_task": True,
+                "enable_progress": True,
+            },
+            "apply_diag_com_import": {
+                "action_func": self.function_logic_layer.import_files_logic.apply_import,
+                "enable_task": True,
+                "enable_progress": True,
+            },
+            "get_single_signal_state": {
+                "action_func": self.function_logic_layer.import_files_logic.apply_cdd_signal,
+                "enable_task": False,
+                "enable_progress": False,
+            },
+            "get_is_add_channel_name": {
+                "action_func": self.function_logic_layer.import_files_logic.get_is_add_channel_name,
+                "enable_task": False,
+                "enable_progress": False,
+            },
+            "close_import_dbc_ldf_ui": {
+                "action_func": self.function_logic_layer.import_files_logic.deinit_import_dbc_ldf_ui,
+                "enable_task": False,
+                "enable_progress": False,
+            },
+            "get_dbc_ldf_content": {
+                "action_func": self.function_logic_layer.import_files_logic.get_dbc_ldf_content,
+                "enable_task": False,
+                "enable_progress": False,
+            },
+            "init_import_cdd_ui": {
+                "action_func": self.function_logic_layer.import_files_logic.init_import_cdd_ui,
+                "enable_task": False,
+                "enable_progress": False,
+            },
+            "get_imported_diag_excel": {
+                "action_func": self.function_logic_layer.import_files_logic.get_imported_diag_excel,
+                "enable_task": False,
+                "enable_progress": False,
+            },
+            "parser_cdd_and_update_ecuc_arxml_action": {
+                "action_func": self.function_logic_layer.import_files_logic.apply_cdd_import,
+                "enable_task": True,
+                "enable_progress": True,
+            },
             "parser_asw_arxml_and_update_arxml_action": {
                 "action_func": self.function_logic_layer.import_files_logic.apply_asw_import,
                 "enable_task": True,
@@ -267,6 +568,21 @@ class UIAdaptor:
             },
             "parser_mcal_arxml_and_get_all_module_action": {
                 "action_func": self.function_logic_layer.import_files_logic.get_all_module_of_mcal_arxml,
+                "enable_task": False,
+                "enable_progress": False,
+            },
+            "import_sidl_sdepl_dir": {
+                "action_func": self.function_logic_layer.import_files_logic.import_sidl_sdepl_dir,
+                "enable_task": True,
+                "enable_progress": True,
+            },
+            "clear_initial_arxml_container": {
+                "action_func": self.function_logic_layer.import_files_logic.clear_initial_container,
+                "enable_task": False,
+                "enable_progress": False,
+            },
+            "restore_possibility": {
+                "action_func": self.function_logic_layer.import_files_logic.restore_possibility,
                 "enable_task": False,
                 "enable_progress": False,
             },

@@ -162,11 +162,9 @@ class GeneratorUtility:
             sys_json_path = os.path.normpath(
                 os.path.join(
                     system_path,
-                    "Os",
-                    "Platform",
+                    "platform_cfg",
                     sys_target[target]["DERIVATIVE_GROUP"],
                     target,
-                    "PlatformCfg",
                     "platform_cfg.json",
                 )
             )

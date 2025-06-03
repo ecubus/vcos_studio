@@ -24,17 +24,22 @@ from func_module.project_management.sys_info_class import SysInfoClass
 from func_module.project_management.studio_cfg_handler import StudioCfgHandler
 from ui_adaptor.func_logic_layer.import_files_logic import ImportFilesLogic
 from ui_adaptor.func_logic_layer.module_manage_logic import ModuleManageLogic
+from ui_adaptor.func_logic_layer.port_mapping_func import PortMappingFunc
+from ui_adaptor.func_logic_layer.service_mapping_func import ServiceMappingFunc
+from ui_adaptor.func_logic_layer.data_mapping_func import DataMappingFunc
 from ui_adaptor.func_logic_layer.task_mapping_func import TaskMappingFunc
 from ui_adaptor.func_logic_layer.bsw_editor_ui_func import BswEditorUIFunc
 from ui_adaptor.func_logic_layer.validation_func import ValidationFunc
 from ui_adaptor.func_logic_layer.export_file_func import ExportFileFunc
 from ui_adaptor.func_logic_layer.os_cfg_ui_func import OsConfigureUIFunc
 from func_module.generator import generator as vcos_generator
+from func_module.generator.ssc_type import generator as arxml_generator
 from func_module.generator.common.common import generator_utility
 from func_module.module_management.arxml_handler.arxml_parse_save import ArxmlSaveHandler, ArxmlParseHandler
 from func_module.project_management.project_file_lock import ProjectFileLock
 from func_module.project_management.project_handler import ProjectHandler
 from func_module.module_management.arxml_handler.ecuc_arxml_updater import EcucArxmlUpdater
+from func_module.module_management.arxml_handler.system.system_arxmls_manager import SystemArxmlsManager
 from func_module.module_management.arxml_handler.ib_bswmd_process.ib_bswmd_process import IbBswmdProcess
 from func_module.module_management.arxml_handler.rte_instances.rte_instances_manager import (
     update_rte_instances_and_os_resource_spinlock,
@@ -60,7 +65,6 @@ from func_module.validation.validator import Validator
 from func_module.module_management.base_config import BASE_CONFIG_PATH
 from func_module.project_management.version_management.vcos_version import JSON_FILE_PATH
 
-
 BASE_ARXML_PATH = os.path.join(BASE_CONFIG_PATH, "base_arxml")
 GENERAL_JSON_PATH = os.path.join(BASE_CONFIG_PATH, "configrator_general.json")
 SCHEMA_XSD_FILE = os.path.join(BASE_CONFIG_PATH, "autosar_cfg/AUTOSAR_00046.xsd")
@@ -74,10 +78,13 @@ class FuncLogicLayer:
         self.__init_function()
 
     def __init_function(self):
+        self.port_mapping_func = PortMappingFunc()
+        self.service_mapping_func = ServiceMappingFunc()
+        self.data_mapping_func = DataMappingFunc()
         self.task_mapping_func = TaskMappingFunc()
         self.bsw_editor_ui_func = BswEditorUIFunc()
-        self.import_files_logic = ImportFilesLogic()
         self.export_file_func = ExportFileFunc()
+        self.import_files_logic = ImportFilesLogic()
         self.validation_func = ValidationFunc()
         self.task_analysis_func = TaskAnalysisLogic()
         self.vfb_trace_function = VfbTraceFunction()
@@ -249,11 +256,9 @@ class FuncLogicLayer:
         init_function_settings_json_path = os.path.normpath(
             os.path.join(
                 system_path,
-                "Os",
-                "Platform",
+                "platform_cfg",
                 sys_target[target]["DERIVATIVE_GROUP"],
                 target,
-                "PlatformCfg",
                 "init_function_settings.json",
             )
         )
@@ -514,6 +519,59 @@ class FuncLogicLayer:
         for value in data_management.sys_info_class.enable_modules:
             enable_module_list.append(value)
         return enable_module_list
+
+    def update_vcos_service_arxml(self, progress_signal):
+        sys_info_dict = vcos_generator.get_sys_info_dict(data_management.sys_info_class)
+        config_path = sys_info_dict["config_path"]
+        enabled_module_list = sys_info_dict.get("modules_info", {}).get("enabled_module_list", [])
+        arxml_generator.generate_bsw_port_arxml(
+            config_path, enabled_module_list, data_management.autosar_bsw_class, progress_signal
+        )
+
+        # update ib arxml
+        other_input_info = {
+            "codegen_autosar_dict": vcos_generator.init_codegen_autosar_dict(data_management),
+            "sys_info_class": data_management.sys_info_class,
+            "sys_target_dict": data_management.sys_target_dict,
+            "is_rte_parse_new_dict": True,
+        }
+        IbBswmdProcess.update_all_ib_bswmd(
+            data_management.autosar_ib_class,
+            data_management.autosar_bsw_class,
+            data_management.autosar_asw_class,
+            data_management.autosar_system_class,
+            other_input_info,
+        )
+        # Save SystemExtract.arxml before mrege
+        tmp_se_path = os.path.join(config_path, "system/SystemExtract.arxml.new")
+        se_obj = data_management.autosar_system_class["SystemExtract"]
+        if se_obj:
+            AutosarUtil.save_arxml(data_management.autosar_system_class["SystemExtract"], tmp_se_path)
+        config_base_path = data_management.sys_info_class.config_base_path
+        progress_signal.emit("Merge service arxml to system arxml")
+        try:
+            res, component_arxml_path_dict_info = ArxmlParseHandler.asw_arxml_merge(
+                os.path.join(config_base_path, "Asw"), config_base_path
+            )
+        except:
+            raise
+        finally:
+            # Delete temp SystemExtract.arxml
+            if os.path.exists(tmp_se_path):
+                os.remove(tmp_se_path)
+        logger.info("Merge service arxml completed")
+        if "asw" not in res:
+            logger.warning("Cannot get asw info")
+        else:
+            data_management.autosar_asw_class = res["asw"]
+            system_arxml_manager = SystemArxmlsManager(data_management.autosar_bswmd_class)
+            system_arxml_manager.update_flatextract_arxml_from_arxml_slot(
+                data_management.autosar_asw_class, data_management.autosar_system_class
+            )
+
+        data_management.component_arxml_path_dict = {"asw_component": component_arxml_path_dict_info}
+
+        return {"service"}
 
     @log_function_stats(["RTE", "Swc template", "UI生成SWC模板文件"])
     def generate_vcos_swc_template(self, swc_list, progress_signal):
@@ -863,14 +921,22 @@ class FuncLogicLayer:
         return VCOS_VERSION
 
     def load_secondary_menu_cfg(self):
-        cfg_path = os.path.join(data_management.sys_info_class.system_path, "secondary_menu_cfg.json")
-        data = {}
-        with open(cfg_path, "r", encoding="utf-8") as json_file:
-            try:
-                data = json.load(json_file)
-            except json.JSONDecodeError as e:
-                print(f"Error decoding JSON from file {cfg_path}: {e}")
-        data_management.sys_secondary_cfg_dict = data
+        folder_path = os.path.join(data_management.sys_info_class.system_path, "system_secondary")
+        self.load_json_files_from_folder(folder_path)
+
+    def load_json_files_from_folder(self, folder_path):
+        json_files_data = {}
+        for root, _, files in os.walk(folder_path):
+            for filename in files:
+                if filename.endswith(".json"):
+                    file_path = os.path.join(root, filename)
+                    with open(file_path, "r", encoding="utf-8") as json_file:
+                        try:
+                            data = json.load(json_file)  # 加载 JSON 文件内容
+                            json_files_data.update(data)  # 将内容添加到列表中
+                        except json.JSONDecodeError as e:
+                            print(f"Error decoding JSON from file {filename}: {e}")
+        data_management.sys_secondary_cfg_dict = json_files_data
 
     def delete_file_lock(self):
         self.project_file_lock.delete_file_lock()

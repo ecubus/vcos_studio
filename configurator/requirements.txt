@@ -41,3 +41,4 @@ bs4==0.0.2
 protobuf==5.29.0
 kconfiglib==14.1.0
 matplotlib==3.7.5
+ldfparser==0.26.0

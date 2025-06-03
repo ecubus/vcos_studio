@@ -16,26 +16,8 @@
 import os
 from typing import Callable
 from PySide6 import QtWidgets, QtGui
-from ui_adaptor.ui_interaction.ui_logger import logger
-from ui_adaptor.data_management import (
-    get_module_stack_dict,
-    get_sys_info_class,
-    get_autosar_bsw_class,
-    get_sys_target_dict,
-    get_all_module_list,
-)
-from cfg_gui.resources.images import images_rc  # noqa: F401
-from cfg_gui.resources.ui.ui_mainwindow import Ui_mainWindow
-from cfg_gui.project_management.new_project_ui import NewProjectUI
-from cfg_gui.project_management.save_as_project_ui import SaveAsProjectUI
-from cfg_gui.project_management.project_information_ui import ProjectConfigUI
-from cfg_gui.generator.generate_cfg_ui import BSWGeneratorWidget
-from cfg_gui.project_management.plugin_manager_dialog_ui import PluginManagerDialog
-from cfg_gui.import_file.import_arxml_ui import HintInfoListDialog, ImportArxmlUi
-from cfg_gui.export_file.export_ecuc_arxml_ui import ExportEcucArxmlUi
 from PySide6.QtWidgets import (
     QApplication,
-    QHBoxLayout,
     QVBoxLayout,
     QFileDialog,
     QPushButton,
@@ -48,21 +30,39 @@ from PySide6.QtWidgets import (
     QSizePolicy,
 )
 from PySide6.QtCore import QSize, QTimer
+from cfg_gui.resources.images import images_rc  # noqa: F401
+from cfg_gui.resources.ui.ui_mainwindow import Ui_mainWindow
 from cfg_gui.common.basic_ui_handler import BasicUIHandler
+from cfg_gui.project_management.new_project_ui import NewProjectUI
+from cfg_gui.project_management.save_as_project_ui import SaveAsProjectUI
+from cfg_gui.project_management.project_information_ui import ProjectConfigUI
+from cfg_gui.project_management.plugin_manager_dialog_ui import PluginManagerDialog
+from cfg_gui.project_management.module_manage_ui import ModuleManageUi
+from cfg_gui.project_management.main_general_ui import ConfigratorGeneral
+from cfg_gui.export_file.export_ecuc_arxml_ui import ExportEcucArxmlUi
+from cfg_gui.import_file.import_arxml_ui import HintInfoListDialog, ImportArxmlUi
 from cfg_gui.import_file.import_asw_arxml_ui import ImportASWARXMLUI
+from cfg_gui.import_file.import_files_ui import ImportFilesUI
 from cfg_gui.bsw_editor.overview_ui import OverViewUI
 from cfg_gui.rte_editor.rte_edit_ui import RteEditUI
-from cfg_gui.project_management.module_manage_ui import ModuleManageUi
 from cfg_gui.validation.validation_ui import ValidationUI
 from cfg_gui.validation.validation_cfg_ui import ValidationCFGUI
-from cfg_gui.search_jump.find_ui import FindTableViewWidget
-from cfg_gui.export_file.export_mapping_info_ui import ExportMappingInfo
+from cfg_gui.generator.generate_cfg_ui import BSWGeneratorWidget
+from cfg_gui.generator.swc_generator_ui import SWCGeneratorWidget
 from cfg_gui.secondary_menu.task_analysis_ui import TaskAnalysisUI
 from cfg_gui.secondary_menu.secondary_menu_ui import SecondaryMenu
-from cfg_gui.widgets.log_widget import LogWidget
 from cfg_gui.secondary_menu.jitter_optimization_ui import JitterOptimizationUI
-from cfg_gui.project_management.main_general_ui import ConfigratorGeneral
+from cfg_gui.search_jump.find_ui import FindTableViewWidget
+from cfg_gui.widgets.log_widget import LogWidget
 from func_module.project_management.recent_files_manager import RecentFilesManager
+from ui_adaptor.ui_interaction.ui_logger import logger
+from ui_adaptor.data_management import (
+    get_module_stack_dict,
+    get_sys_info_class,
+    get_autosar_bsw_class,
+    get_sys_target_dict,
+    get_all_module_list,
+)
 
 CUR_FILE_PATH = os.path.dirname(__file__)
 
@@ -139,7 +139,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_mainWindow):
 
     def _post_init(self, call_back):
         self._init_gui()
-        self._init_rte_view()
         self._register_slot_callback(call_back)
         self._init_finish()
         self._post_init_gui()
@@ -197,7 +196,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_mainWindow):
         self.post_init_secondary_menu_signal_slot()
 
     def _init_gui(self):
-        self.rte_edit_ui = RteEditUI()
+        self.rte_edit_ui = RteEditUI(self)
         self.over_view_ui = OverViewUI(self)
         self.basic_ui_handler = BasicUIHandler(self)
         self.validation_ui = ValidationUI(self)
@@ -238,24 +237,28 @@ class MainWindow(QtWidgets.QMainWindow, Ui_mainWindow):
                 )
 
     def init_signal_slot(self):
-        self.actionSave.setShortcut("CTRL+SHIFT+S")  # type: ignore
-        self.actionOpen.setShortcut("CTRL+SHIFT+P")  # type: ignore
-        self.actionGenerator.setShortcut("CTRL+SHIFT+G")  # type: ignore
-        self.actionValidation.setShortcut("CTRL+SHIFT+V")  # type: ignore
-        self.treeWidgetOverview.doubleClicked.connect(self.over_view_ui.show_bsw_tab_slot)  # type: ignore
-        self.tabWidget.currentChanged.connect(self.bsw_rte_switch_tab_solt)  # type: ignore
-        self.bswTabWidget.tabCloseRequested.connect(self.over_view_ui.close_bsw_tab_solt)  # type: ignore
-        self.bswTabWidget.currentChanged.connect(self.over_view_ui.switch_bsw_tab_solt)  # type: ignore
+        self.actionSave.setShortcut("CTRL+SHIFT+S")
+        self.actionOpen.setShortcut("CTRL+SHIFT+P")
+        self.actionGenerator.setShortcut("CTRL+SHIFT+G")
+        self.actionValidation.setShortcut("CTRL+SHIFT+V")
+        self.actionSWC_Generator.setShortcut("CTRL+SHIFT+M")
+        self.treeWidgetOverview.doubleClicked.connect(self.over_view_ui.show_bsw_tab_slot)
+        self.tabWidget.currentChanged.connect(self.bsw_rte_switch_tab_solt)
+        self.bswTabWidget.tabCloseRequested.connect(self.over_view_ui.close_bsw_tab_solt)
+        self.bswTabWidget.currentChanged.connect(self.over_view_ui.switch_bsw_tab_solt)
 
+        self.import_files_button.clicked.connect(self.import_files_solt)
         self.import_arxml_button.clicked.connect(self.import_arxml_solt)
         self.export_arxml_button.clicked.connect(self.export_ecuc_arxml_slot)
         self.import_asw_arxml_button.clicked.connect(self.import_asw_arxml_slot)
-        self.actionGenerator.triggered.connect(self.generate_vcos_c_code_slot)  # type: ignore
-        self.actionValidation.triggered.connect(self.get_validation_config_slot)  # type: ignore
+        self.actionGenerator.triggered.connect(self.generate_vcos_c_code_slot)
+        self.actionValidation.triggered.connect(self.get_validation_config_slot)
+        self.actionSWC_Generator.triggered.connect(self.swc_generator_vcos_c_code_slot)
         self.actionTaskAnalysis.triggered.connect(self.task_analysis_slot)
         self.actionJitterOpt.triggered.connect(self.jitter_auto_optimization_slot)
 
         self.actionOpen.triggered.connect(self.select_open_vcos_project_config_file_slot)
+        self.actionUpdate.triggered.connect(self.update_vcos_service_arxml_slot)
         self.actionSave.triggered.connect(self.save_vcos_project_config_file_slot)
         self.actionSave_As.triggered.connect(self.save_as_vcos_project_slot)
         self.actionNew.triggered.connect(self.new_vcos_project_config_file_slot)
@@ -287,7 +290,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_mainWindow):
         result = self.slot_call_back("get_secondary_module_enabled_state", module)
         if result is False:
             self.message_reply = QMessageBox.information(
-                self, "Notice", f"Please add { {module} } module.", QMessageBox.StandardButton.Ok
+                self, "Notice", f"Please add {module} module.", QMessageBox.StandardButton.Ok
             )
         return result
 
@@ -352,30 +355,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_mainWindow):
         layout_tab_definition = QVBoxLayout(self.tabDefinition)
         self.table_widget_definition = QTableWidget()
         layout_tab_definition.addWidget(self.table_widget_definition)
-
-    def os_export_button_clicked_slot(self):
-        self.new_project = ExportMappingInfo(self, "export_os_info")
-        self.new_project.show()
-
-    def task_mapping_export_button_clicked_solt(self):
-        self.new_project = ExportMappingInfo(self, "task_mapping")
-        self.new_project.show()
-
-    def _init_rte_view(self):
-        taskMappingLayout: QVBoxLayout = self.taskMappingLayout
-        task_mapping_q_hbox_layout = QHBoxLayout()
-        self.os_export_button = QPushButton("Export Os Info")
-        self.os_export_button.setFixedSize(110, 25)
-        self.task_mapping_export_button = QPushButton("Export")
-        self.task_mapping_export_button.setFixedSize(80, 25)
-        task_mapping_q_hbox_layout.addWidget(self.label_16)
-        task_mapping_q_hbox_layout.addStretch()
-        task_mapping_q_hbox_layout.addWidget(self.os_export_button)
-        task_mapping_q_hbox_layout.addWidget(self.task_mapping_export_button)
-        taskMappingLayout.addLayout(task_mapping_q_hbox_layout)
-        self.os_export_button.clicked.connect(self.os_export_button_clicked_slot)
-        self.task_mapping_export_button.clicked.connect(self.task_mapping_export_button_clicked_solt)
-        taskMappingLayout.addWidget(self.rte_edit_ui.task_mapping_ui)
 
     def update_mainwindow_action_state(self):
         self.centralwidget.setEnabled(True)
@@ -469,7 +448,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_mainWindow):
         for mapping_name, value in mapping_data_info.items():
             if mapping_name == "Task Mapping":
                 self.rte_edit_ui.task_mapping_ui.update_task_mapping_ui({"all"}, value)
-                pass
             elif mapping_name == "Data Mapping":
                 self.rte_edit_ui.data_mapping_ui.update()
             elif mapping_name == "Service Mapping":
@@ -525,11 +503,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_mainWindow):
             result_callback=self.create_proj_setting,
         )
 
-    def import_solt(self):
-        pass
-
     def _register_slot_callback(self, callback: Callable):
         self.slot_call_back = callback
+        self.rte_edit_ui.port_mapping_ui.set_callback(callback)
+        self.rte_edit_ui.service_mapping_ui.set_callback(callback)
+        self.rte_edit_ui.data_mapping_ui.set_callback(callback)
         self.rte_edit_ui.task_mapping_ui.set_callback(callback)
         self.over_view_ui.set_callback(callback)
         self.validation_ui.set_callback(callback)
@@ -544,7 +522,18 @@ class MainWindow(QtWidgets.QMainWindow, Ui_mainWindow):
                 "The fllowing files are illegal to import, please check it.", illegal_files, self
             )
         # TODO: ALL: 导入asw后需要进行的操作请写在此处
+        self.slot_call_back("update_flatextract_data_mapping_after_import")
         self.rte_edit_ui.task_mapping_ui.update_task_mapping_ui({"all"})
+        self.rte_edit_ui.port_mapping_ui.update_tree()
+        self.slot_call_back("update_port_mapping_table_after_import_asw")
+        self.rte_edit_ui.service_mapping_ui.update_tree()
+        self.slot_call_back("update_service_mapping_table_after_import_asw")
+
+    def after_import_dbc_ldf(self, module_set):
+        self.slot_call_back("update_flatextract_data_mapping_after_import")
+        self.slot_call_back(
+            "bsw_editor_update_bsw_modules", module_set, result_callback=self.over_view_ui.update_bsw_modules_view
+        )
 
     def update_overview_ui(self, args):
         if self.input_configurator_project_file_path is None:
@@ -557,6 +546,12 @@ class MainWindow(QtWidgets.QMainWindow, Ui_mainWindow):
             return
         self.slot_call_back(
             "parser_asw_arxml_and_update_arxml_action", asw_arxml_folder, result_callback=self.after_import_asw
+        )
+
+    def import_files_solt(self):
+        self.stop_project_save_timer()
+        self.import_files_ui = ImportFilesUI(
+            self.slot_call_back, self.over_view_ui, self.after_import_dbc_ldf, self.start_project_save_timer
         )
 
     def import_arxml_solt(self):
@@ -864,6 +859,16 @@ class MainWindow(QtWidgets.QMainWindow, Ui_mainWindow):
         self.bsw_generate_ui.update_ui_module_list(support_generate_module_dict, enabled_generate_module_list)
         self.bsw_generate_ui.show()
 
+    def swc_generator_vcos_c_code_slot(self):
+        self.slot_call_back("get_vcos_swc_name_list_action", result_callback=self.update_swc_generate_ui)
+
+    def update_swc_generate_ui(self, swc_list):
+        if swc_list == []:
+            self.swc_generate_ui = SWCGeneratorWidget(swc_list, self.slot_call_back, False)
+        else:
+            self.swc_generate_ui = SWCGeneratorWidget(swc_list, self.slot_call_back)
+        self.swc_generate_ui.show()
+
     def get_validation_config_slot(self):
         self.slot_call_back("get_validation_configuration", result_callback=self.update_bsw_validation_ui)
 
@@ -880,7 +885,14 @@ class MainWindow(QtWidgets.QMainWindow, Ui_mainWindow):
         self.validation_cfg_ui.show()
         pass
 
+    def update_vcos_service_arxml_slot(self):
+        self.slot_call_back("update_action", result_callback=self._update_mapping_ui_tree)
+
     def _update_mapping_ui_tree(self, return_tag: dict):
+        if self.rte_edit_ui and self.rte_edit_ui.service_mapping_ui:
+            self.rte_edit_ui.service_mapping_ui.update()
+        if self.rte_edit_ui and self.rte_edit_ui.port_mapping_ui:
+            self.rte_edit_ui.port_mapping_ui.update()
         if self.rte_edit_ui and self.rte_edit_ui.task_mapping_ui:
             self.rte_edit_ui.task_mapping_ui.update_task_mapping_ui(return_tag)
 
@@ -969,6 +981,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_mainWindow):
 
     def __reset_dependency(self, dependent_bsw_module, op_stack):
         self.rte_edit_ui.is_task_mapping_data_updated = False
+        self.rte_edit_ui.is_data_mapping_data_updated = False
+        self.rte_edit_ui.is_port_mapping_data_updated = False
+        self.rte_edit_ui.is_service_mapping_data_updated = False
         for mod in dependent_bsw_module:
             if mod not in op_stack:
                 continue
@@ -981,7 +996,12 @@ class MainWindow(QtWidgets.QMainWindow, Ui_mainWindow):
         if not isinstance(op_stack, dict):
             return True
 
-        if self.rte_edit_ui.is_task_mapping_data_updated:
+        if (
+            self.rte_edit_ui.is_task_mapping_data_updated
+            or self.rte_edit_ui.is_data_mapping_data_updated
+            or self.rte_edit_ui.is_port_mapping_data_updated
+            or self.rte_edit_ui.is_service_mapping_data_updated
+        ):
             self.__reset_dependency(RTE_DEP_BSW_MODULE, op_stack)
             return True
 

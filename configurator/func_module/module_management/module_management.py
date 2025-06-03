@@ -15,8 +15,11 @@
 ############################################################################
 import os
 from func_module.module_management.arxml_handler.arxml_parse_save import ArxmlParseHandler
+from func_module.module_management.arxml_handler.system.system_arxmls_manager import SystemArxmlsManager
+from func_module.module_management.arxml_handler.system.flatextract_arxml_manager import FlatExtractArxmlManager
 from func_module.health_monitor.logger import logger
 from func_module.project_management.sys_info_class import SysInfoClass
+from func_module.module_management.base_config import BASE_CONFIG_PATH
 from func_module.module_management.arxml_handler.ecuc_arxml_updater import EcucArxmlUpdater
 from func_module.module_management.arxml_handler.base_ecuc_creator import BaseEcucCreator
 from func_module.module_management.arxml_handler.rte_instances.rte_instances_manager import (
@@ -24,6 +27,7 @@ from func_module.module_management.arxml_handler.rte_instances.rte_instances_man
     clear_automatic_os_resource_and_spinlock,
 )
 from func_module.mapping.task_mapping_core import TaskMappingInstance
+from basic_func_module.base_common.load_plug_in import LoadPlugIn
 from basic_func_module.autosar_utils.autosar_ecuc import AutosarEcuc
 from basic_func_module.autosar_utils.autosar_util import AutosarUtil
 from basic_func_module.autosar_utils.utils import (
@@ -148,6 +152,9 @@ class ModuleManagement:
         if instance_name in self.sys_info.enable_modules:
             logger.info(f"{module_name} already added")
             return
+        if module_name not in self.sys_info.all_modules:
+            logger.info(f"{module_name} not supported ui")
+            return
         ib_obj = self.load_ib(instance_name)
         bswmd_res = self.load_bswmd(module_name)
         self.bswmd_obj_dict.update(bswmd_res)
@@ -185,10 +192,15 @@ class ModuleManagement:
                 )
                 task_mapping_instance.deinit()
                 clear_automatic_os_resource_and_spinlock(self.bsw_ecuc_info.get("Os", None))
+                com_ecuc_manager = LoadPlugIn.load_module("Com", "config_plug_in.update_ecuc.com_ecuc_manager")
+                com_ecuc_manager.ComEcucManager.clear_rte_auto_derived_config(self.bsw_ecuc_info.get("Com", None))
+                FlatExtractArxmlManager.del_all_assembly_sw_connectors(system_autosar_dict["FlatExtract"])
+                system_autosar_dict["FlatExtract"] = AutosarUtil.update_autosar(system_autosar_dict["FlatExtract"])
 
             self.sys_info.enable_modules = self.sys_info.enable_modules - {module_name}
             self.sys_info.codegen_modules = self.sys_info.codegen_modules - {module_name}
             self.ib_obj_dict.pop(module_name, -1)
+            self._remove_initial_autosar_module(module_name, system_autosar_dict)
             logger.info(f"Remove {module_name} successfully")
         else:
             logger.info(f"{module_name} not exists.")
@@ -219,6 +231,11 @@ class ModuleManagement:
             module_count[module] = i
             self.append_module(module, instance_name)
             module_count[module] += 1
+
+    def _remove_initial_autosar_module(self, module_name, system_autosar_dict):
+        base_arxml_path = os.path.join(BASE_CONFIG_PATH, "base_arxml")
+        system_arxmls_manager = SystemArxmlsManager(self.bswmd_obj_dict)
+        system_arxmls_manager.remove_initial_autosar_module(module_name, system_autosar_dict, base_arxml_path)
 
     def add_bsw_module_to_rte_bsw_module_instances(self, instance_name):
         """add bsw module to Rte->BswModuleInstance

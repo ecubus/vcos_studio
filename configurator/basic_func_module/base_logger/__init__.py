@@ -14,6 +14,8 @@
 # limitations under the License.
 ############################################################################
 import sys
+from os.path import basename, splitext
+from loguru._recattrs import RecordFile
 from loguru._logger import Core, Logger
 
 __all__ = ["BaseLogger"]
@@ -59,7 +61,7 @@ class BaseLogger(Logger):
             "colorize": colorize,
             "enqueue": enqueue,
             "catch": True,
-            "filter": filter,
+            "filter": filter or self.log_filter,
         }
         try:
             local_kwargs = kwargs.copy()
@@ -69,14 +71,36 @@ class BaseLogger(Logger):
             handler_id = self.add(**kwargs)
         return handler_id
 
+    def update_record(self, record):
+        frame = sys._getframe(6)
+        try:
+            name = frame.f_globals["__name__"]
+        except KeyError:
+            name = None
+        code = frame.f_code
+        file_path = code.co_filename
+        file_name = basename(file_path)
+        record.update(
+            {
+                "file": RecordFile(file_name, file_path),
+                "function": code.co_name,
+                "line": frame.f_lineno,
+                "module": splitext(file_name)[0],
+                "name": name,
+            }
+        )
+
+    def log_filter(self, record):
+        if record["extra"].get("ui_log"):
+            self.update_record(record)
+        return True
+
     def __getattr__(self, name: str):
         if name.startswith("ui_"):
-            name = name[3:]
-        attr = self.__getattribute__(name)
-        if hasattr(self, "ui_object"):
-            return lambda msg, *args, **kwargs: attr(msg, *args, **kwargs, ui_log=True)
+            attr = self.__getattribute__(name[3:])
+            return lambda *args, **kwargs: attr(*args, **kwargs, ui_log=True)
         else:
-            return attr
+            return self.__getattribute__(name)
 
 
 logger = BaseLogger()

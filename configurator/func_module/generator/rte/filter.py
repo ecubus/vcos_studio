@@ -455,6 +455,17 @@ def get_template_input_parameter_dict_from_parsed_data(config_dict: dict) -> dic
     # get the schedule table list info about task for Rte.c template
     task_to_st_dict = get_task_to_st_dict(task_mappings)
 
+    # Get the signal and SignalGroup for which Data Mapping has been done.
+    signals_and_signalgroups = config_dict["data_mapping_config"]["signals_and_signalgroups"]
+
+    # Get the port of the data recevied event
+    data_received_event = config_dict["data_mapping_config"]["data_received_event_list"]
+
+    # Get the port associated with the task_id and event_id.
+    port_event_id_and_task_id = config_dict["data_mapping_config"]["port_event_id_and_task_id"]
+
+    data_mapping_sr_rport_required_com_specs = config_dict["data_mapping_config"].get("sr_required_com_specs_dict", {})
+
     RteGeneration_info = {}
     if "RteGeneration" in config_dict:
         RteGeneration_info = config_dict["RteGeneration"]
@@ -468,11 +479,21 @@ def get_template_input_parameter_dict_from_parsed_data(config_dict: dict) -> dic
         "task_to_st_dict": task_to_st_dict,
         "appl_list": appl_list,
         "task_mappings": task_mappings,
+        "impl_datatype_dict": config_dict["implementation_datatypes"],
+        "iso_call_func_include_header_file": config_dict["iso_call_func_include_header_file"],
         "asw_cfg": config_dict["asw_config"],
+        "mode_declaration_group": config_dict["mode_declaration_group"],
+        "swc_list": [],
+        "signals_and_signalgroups": signals_and_signalgroups,
+        "data_received_event": data_received_event,
+        "port_event_id_and_task_id": port_event_id_and_task_id,
         "bsw_instances": config_dict["bsw_instances"],
+        "sr_required_com_specs_dict": data_mapping_sr_rport_required_com_specs,
+        "sr_dm_glob_vars": config_dict["data_mapping_config"].get("glob_vars", {}),
         "RteGeneration": RteGeneration_info,
         "appl_dict": config_dict["appl_dict"],
         "alarm_dict": config_dict["alarm_dict"],
+        "signal_dict": config_dict["data_mapping_config"]["signal_dict"],
         "cal_prm": _get_calibration_parameter_codegen_dict(config_dict["asw_config"]),
     }
     if len(activation_reasons) > 0:

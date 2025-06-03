@@ -8,7 +8,7 @@ Configurator 是配套 VCOS 操作系统提供给汽车控制器软件开发工�
 
 vcos_studio 源代码在 haloosspace/vcos/vcos_studio 目录下，目录结构如下图所示：
 
-```
+```plaintext
 vcos_studio
 └─ configurator                # 配置工具
     ├─ basic_func_module       # 基础功能模块，主要包括功能模块所使用的公用接口，如文件处理、autosar arxml解析编辑接口、日志接口等
@@ -67,6 +67,8 @@ vcos_studio
   chmod +x .venv/bin/activate
   source .venv/bin/activate
   ```
+
+> 注意：如果下载遇到卡住不动的情况，可以考虑配置当地的pip镜像源
 
 ### 3.2. 启动工具
 

@@ -23,11 +23,13 @@ from decimal import Decimal
 
 from basic_func_module.base_common.load_plug_in import LoadPlugIn
 from basic_func_module.autosar_utils import utils
+from basic_func_module.autosar_utils.autosar_util import AutosarUtil
 from basic_func_module.autosar_utils.autosar_utils import AutosarUtils
 from func_module.health_monitor.logger import logger
 from func_module.module_management.arxml_handler.rte_instances.rte_instances_manager import (
     rte_bsw_instances_codegen_parser,
 )
+from func_module.mapping.data_mapping import DataMapping
 from func_module.mapping.task_mapping_helper import BasicTaskScheduleTableManager
 from func_module.mapping.schedule_table_mapping import ScheduleTableManager
 
@@ -63,10 +65,13 @@ def get_rte_codegen_dict(
     task_mappings_info = get_task_mappings_info(
         asw_autosar_dict.get("asw", None), internal_behavior_autosar_dict, ecuc_autosar_dict
     )
-
+    data_mapping_info = DataMapping.data_mapping_info_to_codegen(
+        asw_autosar_dict.get("asw", None), system_autosar_dict, ecuc_autosar_dict.get("Com", None)
+    )
+    com_cfg_dict = __get_com_cfg_dict(ecuc_autosar_dict, task_mappings_info)
     # get rte codegen dict
     code_gen_dict = AutosarUtils.get_rte_codegen_dict(
-        asw_autosar_dict, task_mappings_info, cfg_dict, parse_new_dict=parse_new_dict
+        asw_autosar_dict, data_mapping_info, task_mappings_info, com_cfg_dict, cfg_dict, parse_new_dict=parse_new_dict
     )
 
     return code_gen_dict, task_mappings_info
@@ -106,16 +111,25 @@ def get_config_dict(
     __update_cfg_dict(
         asw_autosar_dict, ecuc_autosar_dict, cfg_dict, internal_behavior_autosar_dict, code_gen_dict, task_mappings_info
     )
+    __update_com_ecuc_notifications(cfg_dict, ecuc_autosar_dict)
 
 
 def __update_cfg_dict(
     asw_autosar_dict, ecuc_autosar_dict, cfg_dict, internal_behavior_autosar_dict, code_gen_dict, task_mappings_info
 ):
-    cfg_dict["rte"]["implementation_datatypes"] = {}
-    cfg_dict["rte"]["mode_declaration_group"] = {}
+    if "asw" in asw_autosar_dict and asw_autosar_dict["asw"] is not None:
+        cfg_dict["rte"]["implementation_datatypes"] = AutosarUtils.to_idt_codegen_dict(
+            asw_autosar_dict["asw"], is_re_parsing=False
+        )
+        cfg_dict["rte"]["mode_declaration_group"] = AutosarUtils.to_mode_group_codegen_dict(asw_autosar_dict["asw"])
+    else:
+        cfg_dict["rte"]["implementation_datatypes"] = {}
+        cfg_dict["rte"]["mode_declaration_group"] = {}
+
     cfg_dict["rte"]["appl_dict"] = cfg_dict["rte"]["os_cfg"]["OsApplications"]
     cfg_dict["rte"]["alarm_dict"] = cfg_dict["rte"]["os_cfg"]["os_alarms"]
     cfg_dict["rte"]["asw_config"] = code_gen_dict
+    __update_task_mapping_info(task_mappings_info, code_gen_dict)
     cfg_dict["rte"]["task_mappings_info"] = task_mappings_info
     __update_vfb_trace(
         asw_autosar_dict, ecuc_autosar_dict, cfg_dict, internal_behavior_autosar_dict, task_mappings_info
@@ -127,6 +141,33 @@ def __update_vfb_trace(asw_autosar_dict, ecuc_autosar_dict, cfg_dict, ib_autosar
 
     run_data = get_run_data(asw_autosar_dict.get("asw", None), ib_autosar_dict)
     cfg_dict["rte"]["vfb_trace_hooks_info"] = get_vfb_trace_info(ecuc_autosar_dict, run_data, task_mappings_info)
+
+
+def __get_com_cfg_dict(ecuc_autosar_dict, task_mappings_info):
+    try:
+        filter = LoadPlugIn.load_module("Com", "config_plug_in.generator.filter")
+        get_dynamic_code_template_input_parameter_dict = getattr(
+            filter, "get_dynamic_code_template_input_parameter_dict"
+        )
+        com_cfg_dict = (
+            get_dynamic_code_template_input_parameter_dict(
+                {
+                    "bsw": {
+                        "com": AutosarUtil.to_bsw_dict(ecuc_autosar_dict["Com"]),
+                        "ecuc": AutosarUtil.to_bsw_dict(ecuc_autosar_dict["EcuC"]),
+                    },
+                    "rte": {"task_mappings_info": task_mappings_info},
+                }
+            )
+            if ("Com" in ecuc_autosar_dict and "EcuC" in ecuc_autosar_dict)
+            else {}
+        )
+    except Exception:
+        com_cfg_dict = {}
+        logger.exception(
+            "===== Com module parsing error! Please try to upgrade Com module to the latest version! ====="
+        )
+    return com_cfg_dict
 
 
 def __parse_and_update_ecuc_cfg(ecuc_autosar_dict, ib_autosar_dict, cfg_dict):
@@ -192,6 +233,194 @@ def __parse_rte_generation(ecuc_autosar_dict, rte_cfg):
 def get_parsered_swc_list(asw_autosar_dict):
     ar_asw = asw_autosar_dict.get("asw")
     return AutosarUtils.get_all_appl_component_short_names(ar_asw)
+
+
+def __update_com_ecuc_notifications(cfg_dict, ecuc_autosar_dict):
+    """com signal的Timeout和notification更新接口"""
+    com_ecuc = ecuc_autosar_dict.get("Com", None)
+    if com_ecuc is None or "rte" not in cfg_dict.keys():
+        return
+    com_ecuc_manager = LoadPlugIn.load_module("Com", "config_plug_in.update_ecuc.com_ecuc_manager")
+    ComEcucManager = getattr(com_ecuc_manager, "ComEcucManager")
+    SIGNAL_NOTIFICATION_DEFAULT_VALUE_LIST = getattr(com_ecuc_manager, "SIGNAL_NOTIFICATION_DEFAULT_VALUE_LIST")
+    com_signal_default_values = set(SIGNAL_NOTIFICATION_DEFAULT_VALUE_LIST)
+    com_ecuc_notifications = ComEcucManager.get_com_ecuc_notifications(com_ecuc)
+
+    need_notifications_by_required_com_specs = (
+        get_data_mapping_need_notifications_signals_by_sr_rport_required_com_specs(cfg_dict, com_signal_default_values)
+    )
+    _update_com_ecuc_signal_notifications(
+        cfg_dict, com_ecuc, com_ecuc_notifications, need_notifications_by_required_com_specs, com_signal_default_values
+    )
+    _update_com_ecuc_signal_timeout(
+        cfg_dict, com_ecuc, com_ecuc_notifications, need_notifications_by_required_com_specs, com_signal_default_values
+    )
+    _update_com_ecuc_signal_timeout_notifications(
+        cfg_dict, com_ecuc, com_ecuc_notifications, need_notifications_by_required_com_specs, com_signal_default_values
+    )
+
+
+def _update_com_ecuc_signal_notifications(
+    cfg_dict, com_ecuc, com_ecuc_notifications, need_notifications_by_required_com_specs, com_signal_default_values
+):
+    cross_partition_rx_signal_list = get_cross_partition_rx_signal_list(cfg_dict)
+    rport_to_multiple_signals_list = get_rport_mapping_to_multiple_signals_list(cfg_dict)
+    data_rx_event_list = cfg_dict.get("rte", {}).get("data_mapping_config", {}).get("data_received_event_list", [])
+    data_rx_event_signal_list = [data_rx_event.get("port_name", "") for data_rx_event in data_rx_event_list]
+
+    Optimization1To1Rport_signal_list, OptimizationNTo1Rport_signal_list = get_rport_Optimization_signals_list(cfg_dict)
+    need_notification_rx_singals = set(
+        cross_partition_rx_signal_list
+        + data_rx_event_signal_list
+        + rport_to_multiple_signals_list
+        + Optimization1To1Rport_signal_list
+        + OptimizationNTo1Rport_signal_list
+        + need_notifications_by_required_com_specs.get("ComNotification", [])
+    )
+    com_notification_dict = com_ecuc_notifications.get("ComNotification", {})
+    com_ecuc_manager = LoadPlugIn.load_module("Com", "config_plug_in.update_ecuc.com_ecuc_manager")
+    ComEcucManager = getattr(com_ecuc_manager, "ComEcucManager")
+
+    if len(need_notification_rx_singals) > 0:
+        ComEcucManager.update_com_usercbk_headerfile(com_ecuc, "Rte_Cbk.h", "add")
+    else:
+        ComEcucManager.update_com_usercbk_headerfile(com_ecuc, "Rte_Cbk.h", "del")
+    for need_notification_rx_singal in need_notification_rx_singals:
+        # 更新ComNotification
+        com_signal_name = f"{need_notification_rx_singal}_Rx"
+        if com_signal_name in com_notification_dict:
+            notification_containr = com_notification_dict[com_signal_name].get("notification_containr", None)
+            notification_value = com_notification_dict[com_signal_name].get("notification_value", None)
+            if notification_containr is None:
+                continue
+            _set_auto_derived_container_value(
+                notification_containr,
+                notification_value,
+                com_signal_default_values,
+                f"Rte_COMCbk_{need_notification_rx_singal}_Rx",
+            )
+            com_notification_dict.pop(com_signal_name, None)
+        else:
+            find_signal_container = com_ecuc.find(f"/ActiveEcuC/Com/ComConfig/{com_signal_name}")
+            if find_signal_container is None:
+                logger.warning(f"signal:{com_signal_name} not found!")
+                continue
+            _find_signal_value_container_and_set_value(
+                find_signal_container, "ComNotification", f"Rte_COMCbk_{need_notification_rx_singal}_Rx"
+            )
+    for com_notification in com_notification_dict.values():
+        # 清除不需要的ComNotification
+        notification_containr = com_notification.get("notification_containr", None)
+        _clear_auto_derived_container_value(notification_containr, "")
+
+
+def _update_com_ecuc_signal_timeout_notifications(
+    cfg_dict, com_ecuc, com_ecuc_notifications, need_notifications_by_required_com_specs, com_signal_default_values
+):
+    com_notification_dict = com_ecuc_notifications.get("ComTimeoutNotification", {})
+    need_notification_rx_singals = set(need_notifications_by_required_com_specs.get("ComTimeoutNotification", []))
+    for need_notification_rx_singal in need_notification_rx_singals:
+        # 更新ComNotification
+        com_signal_name = f"{need_notification_rx_singal}_Rx"
+        if com_signal_name in com_notification_dict:
+            notification_containr = com_notification_dict[com_signal_name].get("notification_containr", None)
+            notification_value = com_notification_dict[com_signal_name].get("notification_value", None)
+            if notification_containr is None:
+                continue
+            _set_auto_derived_container_value(
+                notification_containr,
+                notification_value,
+                com_signal_default_values,
+                f"Rte_COMCbkRxTOut_{need_notification_rx_singal}_Rx",
+            )
+            com_notification_dict.pop(com_signal_name, None)
+        else:
+            find_signal_container = com_ecuc.find(f"/ActiveEcuC/Com/ComConfig/{com_signal_name}")
+            if find_signal_container is None:
+                logger.warning(f"signal:{com_signal_name} not found!")
+                continue
+            _find_signal_value_container_and_set_value(
+                find_signal_container, "ComTimeoutNotification", f"Rte_COMCbkRxTOut_{need_notification_rx_singal}_Rx"
+            )
+    for com_notification in com_notification_dict.values():
+        # 清除不需要的ComNotification
+        notification_containr = com_notification.get("notification_containr", None)
+        _clear_auto_derived_container_value(notification_containr, "")
+
+
+def _update_com_ecuc_signal_timeout(
+    cfg_dict, com_ecuc, com_ecuc_notifications, need_notifications_by_required_com_specs, com_signal_default_values
+):
+    com_notification_dict = com_ecuc_notifications.get("ComTimeout", {})
+    need_notification_rx_singals = need_notifications_by_required_com_specs.get("ComTimeout", {})
+    for need_notification_rx_singal_dict in need_notification_rx_singals:
+        # 更新ComNotification
+        need_notification_rx_singal = need_notification_rx_singal_dict.get("signal", "")
+        timeout_value = need_notification_rx_singal_dict.get("timeout", "0")
+        com_signal_name = f"{need_notification_rx_singal}_Rx"
+        if com_signal_name in com_notification_dict:
+            notification_containr = com_notification_dict[com_signal_name].get("notification_containr", None)
+            notification_value = com_notification_dict[com_signal_name].get("notification_value", None)
+            if notification_containr is None:
+                continue
+            _set_auto_derived_container_value(
+                notification_containr, notification_value, com_signal_default_values, timeout_value
+            )
+            com_notification_dict.pop(com_signal_name)
+        else:
+            find_signal_container = com_ecuc.find(f"/ActiveEcuC/Com/ComConfig/{com_signal_name}")
+            if find_signal_container is None:
+                logger.warning(f"signal:{com_signal_name} not found!")
+                continue
+            _find_signal_value_container_and_set_value(find_signal_container, "ComTimeout", timeout_value)
+    for com_notification in com_notification_dict.values():
+        # 清除不需要的ComNotification
+        notification_containr = com_notification.get("notification_containr", None)
+        _clear_auto_derived_container_value(notification_containr, "0")
+
+
+def _set_auto_derived_container_value(value_containr, notification_value, com_signal_default_values, set_val=""):
+    container_path = value_containr.get_path()
+    def_ref = utils.get_definition_ref(value_containr).split("/")[-1]
+    val_path = f"{container_path}/{def_ref}"
+    if AutosarUtil.is_auto_derived(value_containr):
+        if not AutosarUtil.is_user_defined(value_containr):
+            utils.set_value(value_containr, set_val)
+        else:
+            logger.ui_warning(f"{val_path}: {set_val} update failed, because of user defined!")
+    else:
+        if not AutosarUtil.is_user_defined(value_containr):
+            if notification_value in com_signal_default_values:
+                utils.set_value(value_containr, set_val)
+                AutosarUtil.add_annotation_value(value_containr, "AutoDerived")
+            else:
+                logger.ui_warning(f"{val_path}: {set_val} update failed, because of user defined!")
+
+
+def _clear_auto_derived_container_value(value_containr, set_val=""):
+    if value_containr is None:
+        return
+    if AutosarUtil.is_auto_derived(value_containr):
+        AutosarUtil.remove_annotation_value(value_containr, "AutoDerived")
+        if not AutosarUtil.is_user_defined(value_containr):
+            utils.set_value(value_containr, set_val)
+
+
+def _find_signal_value_container_and_set_value(container, definition, set_val):
+    container_path = container.get_path()
+    for textual_param in (
+        container.PARAMETER_VALUES.ECUC_NUMERICAL_PARAM_VALUE + container.PARAMETER_VALUES.ECUC_TEXTUAL_PARAM_VALUE
+    ):
+        if str(utils.get_definition_ref(textual_param)).split("/")[-1] != definition:
+            continue
+        val_path = f"{container_path}/{definition}"
+        if AutosarUtil.is_user_defined(textual_param):
+            logger.ui_warning(f"{val_path}: {set_val} update failed, because of user defined!")
+            continue
+        utils.set_value(textual_param, set_val)
+        if not AutosarUtil.is_auto_derived(textual_param):
+            AutosarUtil.add_annotation_value(textual_param, "AutoDerived")
+        break
 
 
 def get_data_mapping_need_notifications_signals_by_sr_rport_required_com_specs(cfg_dict, com_signal_default_values):
@@ -354,7 +583,6 @@ def get_task_mappings_info(asw_autosar, ib_autosar_dict, ecuc_autosar_dict: dict
             task_mapping = task_mappings_info[task_name]
             task_mapping["schedulable_entity_info_list"].append(schedulable_entity_info)
             task_mapping["alarm_info_list"].append(alarm_info)
-    # check_task_mapping_init_event_position(task_mappings_info)
     # The placeholder ensures that the application file can be generated
     add_auto_start_task(task_mappings_info, os_cfg)
     task_names = update_task_mapping_sch_tbl_list(
@@ -383,28 +611,6 @@ def __parse_isolate_autosar(module_config):
     if not isolate_autosar:
         return isolate_cfg
 
-    """
-    for container in isolate_autosar.find(f"/ActiveEcuC/Isolate").CONTAINERS.ECUC_CONTAINER_VALUE:
-        def_ref = utils.get_definition_ref(container)
-        if not def_ref.endswith("Rte"):
-            continue
-        if not container.SUB_CONTAINERS:
-            break
-        mod_name = "Rte"
-        for sub_container in container.SUB_CONTAINERS.ECUC_CONTAINER_VALUE:
-            osa_name = ""
-            iso_func = {
-                "name": utils.get_short_name(sub_container),
-                "module": mod_name,
-                "osa": osa_name,
-                "header_file_name": f"{mod_name}_{osa_name}_Isolate.h",
-            }
-            if iso_func["name"] in isolate_cfg["iso_func"]:
-                continue
-            isolate_cfg["module"][mod_name].append(iso_func)
-            isolate_cfg["iso_func"][iso_func["name"]] = iso_func
-    """
-
     for container in isolate_autosar.find("/ActiveEcuC/Isolate").CONTAINERS.ECUC_CONTAINER_VALUE:
         mod_name = utils.get_short_name(container)
         def_ref = utils.get_definition_ref(container)
@@ -419,7 +625,7 @@ def __parse_isolate_autosar(module_config):
         for ref in container.REFERENCE_VALUES.ECUC_REFERENCE_VALUE:
             if utils.get_definition_ref(ref).endswith("OsApplicationRef"):
                 try:
-                    osa_name = utils.get_value_ref(ref).split("/")[-1]
+                    osa_name = (utils.get_value_ref(ref) or "").split("/")[-1]
                 except Exception:
                     pass
                 break
@@ -440,6 +646,75 @@ def __parse_isolate_autosar(module_config):
             isolate_cfg["iso_func"][iso_func["name"]] = iso_func
 
     return isolate_cfg
+
+
+def __update_task_mapping_info(task_mappings_info, asw_config):
+    for task_name, mapping_info in task_mappings_info.items():
+        if "cs_alarm_info_list" not in mapping_info:
+            mapping_info["cs_alarm_info_list"] = []
+            mapping_info["cs_event_info_list"] = []
+        removed_schedulable_entity_infos = []
+        removed_alarm_info_list = []
+        service_runnable_infos = {}
+        for name, component in asw_config.items():
+            if name not in service_runnable_infos:
+                service_runnable_infos[name] = {}
+            for pport in component["pports"].values():
+                if pport["type"] == "Server":
+                    if not pport["connected_ports"]:
+                        continue
+                    service_runnable_infos[name][pport["runnable"]] = pport
+
+        for i, schedulable_entity_info in enumerate(mapping_info["schedulable_entity_info_list"]):
+            if schedulable_entity_info["event_type"] == "OperationInvokedEvent":
+                name = schedulable_entity_info["name"]
+                component = schedulable_entity_info["component"]
+                # 检查service名称是否存在asw中service port一致
+                if name not in service_runnable_infos[component]:
+                    removed_schedulable_entity_infos.append(schedulable_entity_info)
+                    removed_alarm_info_list.append(i)
+                    logger.warning(f"service runnable name:{name} is different from service port name")
+                    continue
+                pport_names = service_runnable_infos[component][name]
+                pport_name = pport_names["name"]
+                pport = asw_config[component]["pports"][pport_name]
+                connected_ports = pport.get("connected_ports", {})
+                if not connected_ports:
+                    continue
+                if connected_ports["category"] == "1:1":
+                    rport = connected_ports["ports"][0]
+                    rport = asw_config[rport["component"]]["rports"][rport["name"]]
+                    # Direct call不需要映射代码生成，故移除
+                    if not rport["ioc"]:
+                        removed_schedulable_entity_infos.append(schedulable_entity_info)
+                        removed_alarm_info_list.append(i)
+                        continue
+                    if not rport["task"]:
+                        continue
+                    timeout = int(rport["timeout"])
+                    for task_name in set(rport["task"]):
+                        if "cs_event_info_list" not in task_mappings_info[task_name]:
+                            task_mappings_info[task_name]["cs_event_info_list"] = []
+                        if timeout > 0:
+                            alarm_info = {}
+                            alarm_info["task_name"] = task_name
+                            alarm_info["alarm_action_type"] = "set_event"
+                            alarm_info["alarm_name"] = f"Rte_Al_Timeout_{task_name}"
+                            alarm_info["alarm_action"] = f"Rte_Ev_Timeout_{task_name}"
+                            mapping_info["cs_alarm_info_list"].append(alarm_info)
+                            task_mappings_info[task_name]["cs_event_info_list"].append(f"Rte_Ev_Timeout_{task_name}")
+                    task_mappings_info[task_name]["cs_event_info_list"].append(f"Rte_Ev_WaitPoint_{task_name}")
+                elif connected_ports["category"] == "1:N":
+                    # Direct call不需要映射代码生成，故移除
+                    if not pport["ioc"]:
+                        removed_schedulable_entity_infos.append(schedulable_entity_info)
+                        removed_alarm_info_list.append(i)
+                        continue
+
+        removed_alarm_info_list.reverse()
+        for i, schedulable_entity_info in enumerate(removed_schedulable_entity_infos):
+            mapping_info["schedulable_entity_info_list"].remove(schedulable_entity_info)
+            mapping_info["alarm_info_list"].pop(removed_alarm_info_list[i])
 
 
 def get_rte_cfg(container_value, autosar, perfix, os_cfg):
@@ -464,18 +739,19 @@ def get_rte_cfg(container_value, autosar, perfix, os_cfg):
             mapping_name = utils.get_short_name(container_value)
             mapping_cfg = {}
             mapping_cfg["ActivationOffset"] = 0
-            mapping_cfg["Event"] = {"EventType": None}
+            mapping_cfg["Event"] = {}
+            mapping_cfg["Event"]["EventType"] = None
             for value in values:
                 value_type = utils.get_definition_ref(value)
                 if value_type.endswith(f"{perfix}ActivationOffset"):
                     offset = utils.get_value(value)
-                    if offset in (None, ""):
+                    if not offset:
                         offset = 0
                     mapping_cfg["ActivationOffset"] = offset
                 elif value_type.endswith(f"{perfix}PositionInTask"):
-                    mapping_cfg["PositionInTask"] = int(utils.get_value(value))
+                    mapping_cfg["PositionInTask"] = int(utils.get_value(value) or 0)
                 elif value_type.endswith(f"{perfix}EventRef"):
-                    ref = utils.get_value_ref(value)
+                    ref = utils.get_value_ref(value) or ""
                     module = ref.split("/")[-3]
                     event = None
                     if rte_cfg["is_bsw"] and module in autosar:
@@ -555,12 +831,12 @@ def get_rte_cfg(container_value, autosar, perfix, os_cfg):
                                 ea_refs.append(ea_ref)
                     event_cfg["mode_disabling_info"] = __parse_mode_disabling_info(event, event_cfg["RunnableName"])
                 elif value_type.endswith(f"{perfix}MappedToTaskRef"):
-                    mapping_cfg["MappedToTask"] = utils.get_value_ref(value).split("/").pop()
+                    mapping_cfg["MappedToTask"] = (utils.get_value_ref(value) or "").split("/").pop()
                     mapping_cfg["osa"] = os_cfg["OsTasks"].get(mapping_cfg["MappedToTask"], {}).get("osa")
                 elif value_type.endswith(f"{perfix}UsedOsAlarmRef"):
                     used_os_alarm = utils.get_value_ref(value)
                     if used_os_alarm:
-                        mapping_cfg["UsedOsAlarm"] = utils.get_value_ref(value).split("/").pop()
+                        mapping_cfg["UsedOsAlarm"] = used_os_alarm.split("/").pop()
                     else:
                         mapping_cfg["UsedOsAlarm"] = None
                 elif value_type.endswith(f"{perfix}UsedOsEventRef"):
@@ -666,43 +942,6 @@ def add_schedule_table_for_basic_task(task_mappings_info, task_set):
 
         if mapping_cfg["schedule_table_list"]:
             mapping_cfg["has_unique_sch_tbl"] = True
-
-
-def check_task_mapping_init_event_position(task_mappings_info: dict):
-    """
-    Check whether the position where the InitEvent schedulable entity
-    mapping is before other event (BackgroundEvent, DataReceivedEvent, ...) schedulable entities.
-    """
-    position_dict = {}
-    for task_name, mappings_info in task_mappings_info.items():
-        for schedulable_entity_info in mappings_info["schedulable_entity_info_list"]:
-            event_type = schedulable_entity_info["event_type"]
-            position = schedulable_entity_info["position_in_task"]
-            if task_name not in position_dict:
-                position_dict[task_name] = dict.fromkeys(["InitEvent", "OtherEvent"])
-            if event_type == "InitEvent":
-                min_position = position_dict[task_name]["InitEvent"]
-                if min_position is None:
-                    min_position = (position, schedulable_entity_info["name"])
-                else:
-                    min_position = (min(min_position[0], position), min_position[1])
-                position_dict[task_name]["InitEvent"] = min_position
-            else:
-                min_position = position_dict[task_name]["OtherEvent"]
-                if min_position is None:
-                    min_position = (position, schedulable_entity_info["name"])
-                else:
-                    min_position = (min(min_position[0], position), min_position[1])
-                position_dict[task_name]["OtherEvent"] = min_position
-            init_event_position = position_dict[task_name]["InitEvent"]
-            other_event_position = position_dict[task_name]["OtherEvent"]
-            if init_event_position is None or other_event_position is None:
-                continue
-            if init_event_position[0] >= other_event_position[0]:
-                logger.error(
-                    f"Init runnable <{init_event_position[1]}> is mapped to the task <{task_name}>. "
-                    f"The task has a schedulable entity <{other_event_position[1]}> before Init runnable."
-                )
 
 
 def get_task_application_info(os_config: dict) -> dict:

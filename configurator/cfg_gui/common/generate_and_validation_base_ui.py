@@ -13,9 +13,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 ############################################################################
-from PySide6.QtWidgets import QWidget, QTreeView, QHBoxLayout, QVBoxLayout, QPushButton, QAbstractItemView
+from PySide6.QtWidgets import QHeaderView, QWidget, QTreeView, QHBoxLayout, QVBoxLayout, QPushButton, QAbstractItemView
 from PySide6.QtGui import QStandardItem, QStandardItemModel, QIcon
-from PySide6.QtCore import Qt, QModelIndex
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QMessageBox
 from ui_adaptor.ui_interaction.ui_logger import logger
 from typing import Callable
@@ -29,6 +29,7 @@ TopList = [
     "Measurement & Calibration",
     "Memory",
     "Mode Management",
+    "Safety",
     "Timing",
 ]
 
@@ -49,8 +50,7 @@ class GenerateAndValidationBaseUI(QWidget):
         self.model_table = QStandardItemModel(0, 4, self.treeview)
         self.model_table.setHorizontalHeaderLabels(["Generation Step", "Calculation", "Validation", ""])
         self.treeview.setModel(self.model_table)
-        self.treeview.expanded.connect(self.update_tree_scroll_area)
-        self.treeview.collapsed.connect(self.update_tree_scroll_area)
+        self.treeview.header().setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
         self.treeview.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.rootItem = self.model_table.invisibleRootItem()
         self.child_node = QStandardItem("VCOS Configurator Code Generation")
@@ -131,9 +131,6 @@ class GenerateAndValidationBaseUI(QWidget):
             else:
                 continue
         return module_list_to_check
-
-    def update_tree_scroll_area(self, index: QModelIndex):
-        self.treeview.resizeColumnToContents(index.column())
 
     def close_cancel_button_slot(self):
         pass

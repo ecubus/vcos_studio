@@ -28,6 +28,7 @@ class ExportMappingInfo(QtWidgets.QDialog, Ui_Form):
         self.mapping_type = mapping_type
         self.main_window = main_window
         self.task_mapping_ui = self.main_window.rte_edit_ui.task_mapping_ui
+        self.data_mapping_ui = self.main_window.rte_edit_ui.data_mapping_ui
         self.file_path = ""
 
         self.setupUi(self)
@@ -48,11 +49,16 @@ class ExportMappingInfo(QtWidgets.QDialog, Ui_Form):
         info_table = None
         if self.file_path is None:
             return
+        if "port_mapping" == self.mapping_type:
+            pass
+        elif "data_mapping" == self.mapping_type:
+            info_table = self.data_mapping_ui.table_model
+        elif "service_mapping" == self.mapping_type:
+            pass
         elif "task_mapping" == self.mapping_type:
             info_table = self.task_mapping_ui.table_view_model
         elif "export_os_info" == self.mapping_type:
             info_table = self.task_mapping_ui.table_view_model
-
         if info_table:
             self.callback("export_mapping_info_to_excel", info_table, self.mapping_type, self.file_path)
 

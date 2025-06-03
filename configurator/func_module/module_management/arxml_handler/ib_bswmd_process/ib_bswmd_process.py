@@ -16,7 +16,7 @@
 """
 更新bsw模块的ib_bswm对象
 """
-
+from basic_func_module.base_common.load_plug_in import LoadPlugIn
 from func_module.health_monitor.logger import logger
 from func_module.module_management.module_dependency_resolver.module_dependency_resolver import (
     sort_module_list_based_on_dependency,
@@ -54,17 +54,17 @@ class IbBswmdProcess:
                     logger.error(f"Module {module_name} not found in sys_info_class.plug_in_path!")
                     continue
                 package_path = f"config_plug_in.ib_bswmd_process.{module_name.lower()}_ib_bswmd_process"
-                from basic_func_module.base_common.load_plug_in import LoadPlugIn
-
-                cls.module_pkgs[module_name] = LoadPlugIn.load_module(module_name, package_path)
+                module_pkg = LoadPlugIn.load_module(module_name, package_path)
+                if module_pkg is None:
+                    logger.debug(f"Module {module_name} not update internal behavior mainfunction or exclusive areas")
+                    continue
+                cls.module_pkgs[module_name] = module_pkg
                 if module_name not in internal_behavior_dict.keys():
                     logger.error(f"Module {module_name} internal behavior not found!")
                     continue
                 cls.module_pkgs[module_name].update_ib_bswmd(
                     internal_behavior_dict, ecuc_autosar_dict, asw_autosar_dict, system_autosar_dict, other_input_info
                 )
-            except ModuleNotFoundError:
-                logger.debug(f"Module {module_name} not update internal behavior mainfunction or exclusive areas")
             except Exception as e:
                 logger.ui_error(
                     f"Module {module_name} update internal behavior mainfunction or exclusive areas error! {e}"

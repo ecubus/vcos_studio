@@ -993,6 +993,19 @@ class AutosarUtil:
         return elements
 
     @classmethod
+    def remove_connector(cls, ar, short_name):
+        ar_ecu_compositions = ar.find_nodes("COMPOSITION-SW-COMPONENT-TYPE")
+        if len(ar_ecu_compositions) == 0:
+            return
+        for ar_ecu_composition in ar_ecu_compositions:
+            if not ar_ecu_composition.CONNECTORS:
+                break
+            for assembly_connector in ar_ecu_composition.CONNECTORS.ASSEMBLY_SW_CONNECTOR:
+                if assembly_connector.SHORT_NAME.valueOf_ == short_name:
+                    ar_ecu_composition.CONNECTORS.ASSEMBLY_SW_CONNECTOR.remove(assembly_connector)
+                    break
+
+    @classmethod
     def remove_module_value(cls, ecuc_module_value: list, value):
         cls.remove_value_from_list(ecuc_module_value, value)
         if hasattr(value, "CONTAINERS") and value.CONTAINERS is None:
@@ -1810,6 +1823,160 @@ class AutosarUtil:
         package.set_parent(parent)
         return package
 
+    @classmethod
+    def create_ar_elements(cls) -> autosar44.ELEMENTSType2:
+        elements = autosar44.ELEMENTSType2()
+        elements.set_tag("ELEMENTS")
+        return elements
+
+    @classmethod
+    def create_ar_compu_method(cls, name, parent=None):
+        cm_obj = autosar44.COMPU_METHOD()
+        utils.set_short_name(cm_obj, name)
+        cm_obj.set_tag("COMPU-METHOD")
+        cm_obj.set_parent(parent)
+        return cm_obj
+
+    @classmethod
+    def crate_compu_internal_to_phys(cls, parent=None):
+        c_obj = autosar44.COMPU()
+        c_obj.set_tag("COMPU-INTERNAL-TO-PHYS")
+        c_obj.set_parent(parent)
+        return c_obj
+
+    @classmethod
+    def create_compu_scales(cls, parent=None):
+        cs_s_obj = autosar44.COMPU_SCALESType808()
+        cs_s_obj.set_tag("COMPU-SCALES")
+        cs_s_obj.set_parent(parent)
+        return cs_s_obj
+
+    @classmethod
+    def create_compu_scale(cls, parent=None):
+        cs_obj = autosar44.COMPU_SCALE()
+        cs_obj.set_tag("COMPU-SCALE")
+        cs_obj.set_parent(parent)
+        return cs_obj
+
+    @classmethod
+    def create_desc(cls, text_list, parent=None):
+        desc_obj = autosar44.MULTI_LANGUAGE_OVERVIEW_PARAGRAPH()
+        desc_obj.set_tag("DESC")
+        desc_obj.set_parent(parent)
+        if not isinstance(text_list, list):
+            text_list = [text_list]
+        for text in text_list:
+            text = autosar44.quote_xml(str(text))
+            l_2_obj = autosar44.L_OVERVIEW_PARAGRAPH(L="FOR-ALL", valueOf_=str(text))
+            mixed_container = autosar44.MixedContainer(
+                autosar44.MixedContainer.CategoryText, autosar44.MixedContainer.TypeNone, "", str(text)
+            )
+            l_2_obj.content_.append(mixed_container)
+            l_2_obj.set_tag("L-2")
+            l_2_obj.set_parent(desc_obj)
+            desc_obj.L_2.append(l_2_obj)
+
+        return desc_obj
+
+    @classmethod
+    def create_compu_const(cls, parent=None):
+        cc_obj = autosar44.COMPU_CONST()
+        cc_obj.set_tag("COMPU-CONST")
+        cc_obj.set_parent(parent)
+        return cc_obj
+
+    @classmethod
+    def create_compu_rational_coeffs(cls, parent=None):
+        crc_obj = autosar44.COMPU_RATIONAL_COEFFS()
+        crc_obj.set_tag("COMPU-RATIONAL-COEFFS")
+        crc_obj.set_parent(parent)
+        return crc_obj
+
+    @classmethod
+    def create_compu_numerator(cls, scale, offset, parent=None):
+        cnd_obj = autosar44.COMPU_NOMINATOR_DENOMINATOR()
+        cnd_obj.set_tag("COMPU-NUMERATOR")
+        cnd_obj.set_parent(parent)
+
+        nvvp_offset_obj = autosar44.NUMERICAL_VALUE_VARIATION_POINT(valueOf_=offset)
+        nvvp_offset_obj.set_parent(cnd_obj)
+        cnd_obj.V.append(nvvp_offset_obj)
+        mixed_container = autosar44.MixedContainer(
+            autosar44.MixedContainer.CategoryText, autosar44.MixedContainer.TypeNone, "", str(offset)
+        )
+        nvvp_offset_obj.content_.append(mixed_container)
+
+        nvvp_scale_obj = autosar44.NUMERICAL_VALUE_VARIATION_POINT(valueOf_=scale)
+        nvvp_scale_obj.set_parent(cnd_obj)
+        cnd_obj.V.append(nvvp_scale_obj)
+        mixed_container = autosar44.MixedContainer(
+            autosar44.MixedContainer.CategoryText, autosar44.MixedContainer.TypeNone, "", str(scale)
+        )
+        nvvp_scale_obj.content_.append(mixed_container)
+
+        return cnd_obj
+
+    @classmethod
+    def create_compu_denominator(cls, parent=None):
+        cnd_obj = autosar44.COMPU_NOMINATOR_DENOMINATOR()
+        cnd_obj.set_tag("COMPU-DENOMINATOR")
+        cnd_obj.set_parent(parent)
+
+        nvvp_obj = autosar44.NUMERICAL_VALUE_VARIATION_POINT(valueOf_=str(1))
+        nvvp_obj.set_parent(cnd_obj)
+        cnd_obj.V.append(nvvp_obj)
+        mixed_container = autosar44.MixedContainer(
+            autosar44.MixedContainer.CategoryText, autosar44.MixedContainer.TypeNone, "", str(1)
+        )
+        nvvp_obj.content_.append(mixed_container)
+
+        return cnd_obj
+
+    @classmethod
+    def create_data_constr(cls, name, parent=None):
+        dc_obj = autosar44.DATA_CONSTR()
+        utils.set_short_name(dc_obj, name)
+        dc_obj.set_tag("DATA-CONSTR")
+        dc_obj.set_parent(parent)
+
+        return dc_obj
+
+    @classmethod
+    def create_data_constr_rules(cls, parent=None):
+        dcr_s_obj = autosar44.DATA_CONSTR_RULESType939()
+        dcr_s_obj.set_tag("DATA-CONSTR-RULES")
+        dcr_s_obj.set_parent(parent)
+
+        return dcr_s_obj
+
+    @classmethod
+    def create_data_constr_rule(cls, low_lim, up_lim, parent=None):
+        dcr_obj = autosar44.DATA_CONSTR_RULE()
+        dcr_obj.set_tag("DATA-CONSTR-RULE")
+        dcr_obj.set_parent(parent)
+
+        ic_obj = autosar44.INTERNAL_CONSTRS()
+        ic_obj.set_tag("INTERNAL-CONSTRS")
+        ic_obj.set_parent(dcr_obj)
+        dcr_obj.INTERNAL_CONSTRS = ic_obj
+
+        utils.set_lower_limit(ic_obj, str(low_lim), "CLOSED")
+        utils.set_upper_limit(ic_obj, str(up_lim), "CLOSED")
+
+        return dcr_obj
+
+    @classmethod
+    def create_sw_base_type(cls, name, category, type_size, type_encoding, parent=None):
+        sbt_obj = autosar44.SW_BASE_TYPE()
+        sbt_obj.set_tag("SW-BASE-TYPE")
+        sbt_obj.set_parent(parent)
+        utils.set_short_name(sbt_obj, name)
+        utils.set_category(sbt_obj, category)
+        utils.set_base_type_size(sbt_obj, type_size)
+        utils.set_base_type_encoding(sbt_obj, type_encoding)
+
+        return sbt_obj
+
     ####################################################################################################################
     # Parse autosar ecuc function
 
@@ -1908,3 +2075,125 @@ class AutosarUtil:
                 grand_sub_containers = getattr(getattr(sub_container, "SUB_CONTAINERS"), "ECUC_CONTAINER_VALUE", [])
                 __recursive_get_all_sub_containers(container_path_list, grand_sub_containers, target_container_mod_path)
         return container_path_list
+
+    @staticmethod
+    def remove_assembly_sw_connector(flatExtract_autosar, short_name):
+        AutosarUtil.remove_connector(flatExtract_autosar, short_name)
+
+    @classmethod
+    def save_assembly_sw_connector(cls, flatExtract_autosar, sw_connectors: List):
+        connectors = flatExtract_autosar.find("/COM/VECTOR/CFG/WORKFLOW/SYSDESC/SYNC/COMPOSITIONTYPE").CONNECTORS
+        connector_set = set(
+            map(lambda x: x.SHORT_NAME.valueOf_, connectors.ASSEMBLY_SW_CONNECTOR + connectors.DELEGATION_SW_CONNECTOR)
+        )
+        for conn in sw_connectors:
+            for connector_name, connector_value in conn.items():
+                if connector_name in connector_set:
+                    continue
+                cls.create_full_sw_connector(connectors, connector_value)
+
+    @classmethod
+    def create_full_sw_connector(cls, parent, value):
+        connector_type = value["type"]
+        if connector_type == "ASSEMBLY_SW_CONNECTOR":
+            short_name = value["short_name"]
+            provider_iref_obj = cls.create_provider_iref(parent, value)
+            requester_iref_obj = cls.create_requester_iref(parent, value)
+            rv_obj = AutosarUtil.create_ar_assembly_sw_connector(short_name, provider_iref_obj, requester_iref_obj)
+            if parent and hasattr(parent, "ASSEMBLY_SW_CONNECTOR"):
+                if isinstance(parent.ASSEMBLY_SW_CONNECTOR, list):
+                    parent.ASSEMBLY_SW_CONNECTOR.append(rv_obj)
+        else:
+            pass
+
+    @classmethod
+    def create_ar_assembly_sw_connector(
+        cls, short_name: str, PROVIDER_IREF=None, REQUESTER_IREF=None, parent=None
+    ) -> autosar44.ASSEMBLY_SW_CONNECTOR:
+        short_name_obj = autosar44.IDENTIFIER(valueOf_=short_name)
+        assembly_sw_connector = autosar44.ASSEMBLY_SW_CONNECTOR(
+            SHORT_NAME=short_name_obj, PROVIDER_IREF=PROVIDER_IREF, REQUESTER_IREF=REQUESTER_IREF
+        )
+        assembly_sw_connector.set_parent(parent)
+        assembly_sw_connector.set_tag("ASSEMBLY-SW-CONNECTOR")
+        return assembly_sw_connector
+
+    @staticmethod
+    def create_provider_iref(parent, value):
+        context_ref = value["provider_iref"]["context_component_ref"]
+        context_component_dest = value["provider_iref"]["context_component_dest"]
+        target_pport_ref = value["provider_iref"]["target_pport_ref"]
+        target_pport_dest = value["provider_iref"]["target_pport_dest"]
+        context_ref_obj = AutosarUtil.create_ar_context_component_reftype(
+            DEST=context_component_dest, valueOf_=context_ref
+        )
+        target_pport_ref_obj = AutosarUtil.create_ar_target_p_port_reftype(
+            DEST=target_pport_dest, valueOf_=target_pport_ref
+        )
+        rv_provider_iref_obj = AutosarUtil.create_ar_p_port_in_composition_instance_ref(
+            context_ref_obj, target_pport_ref_obj
+        )
+        return rv_provider_iref_obj
+
+    @staticmethod
+    def create_requester_iref(parent, value):
+        rport_context_ref = value["requester_iref"]["context_component_ref"]
+        rport_context_dest = value["requester_iref"]["context_component_dest"]
+        rport_target_rport_ref = value["requester_iref"]["target_rport_ref"]
+        rport_target_rpport_dest = value["requester_iref"]["target_rport_dest"]
+        context_r_component_ref = AutosarUtil.create_ar_context_component_reftype(
+            DEST=rport_context_dest, valueOf_=rport_context_ref
+        )
+        target_r_port_ref = AutosarUtil.create_ar_target_r_port_reftype(
+            DEST=rport_target_rpport_dest, valueOf_=rport_target_rport_ref
+        )
+        rv_requester_iref_obj = AutosarUtil.create_ar_r_port_in_composition_instance_ref(
+            context_r_component_ref, target_r_port_ref
+        )
+        return rv_requester_iref_obj
+
+    @classmethod
+    def create_ar_context_component_reftype(
+        cls, valueOf_: str, DEST: str, parent=None
+    ) -> autosar44.CONTEXT_COMPONENT_REFType:
+        context_component_reftype = autosar44.CONTEXT_COMPONENT_REFType(valueOf_=valueOf_, DEST=DEST)
+        context_component_reftype.set_parent(parent)
+        return context_component_reftype
+
+    @classmethod
+    def create_ar_target_r_port_reftype(cls, valueOf_: str, DEST: str, parent=None) -> autosar44.TARGET_R_PORT_REFType:
+        target_r_port_reftype = autosar44.TARGET_R_PORT_REFType(valueOf_=valueOf_, DEST=DEST)
+        target_r_port_reftype.set_parent(parent)
+        return target_r_port_reftype
+
+    @classmethod
+    def create_ar_target_p_port_reftype(cls, valueOf_: str, DEST: str, parent=None) -> autosar44.TARGET_P_PORT_REFType:
+        target_p_port_reftype = autosar44.TARGET_P_PORT_REFType(valueOf_=valueOf_, DEST=DEST)
+        target_p_port_reftype.set_parent(parent)
+        return target_p_port_reftype
+
+    @classmethod
+    def create_ar_p_port_in_composition_instance_ref(
+        cls,
+        CONTEXT_COMPONENT_REF: autosar44.CONTEXT_COMPONENT_REFType = None,
+        TARGET_P_PORT_REF: autosar44.TARGET_P_PORT_REFType = None,
+        parent=None,
+    ) -> autosar44.P_PORT_IN_COMPOSITION_INSTANCE_REF:
+        p_port_in_composition_instance_ref = autosar44.P_PORT_IN_COMPOSITION_INSTANCE_REF(
+            CONTEXT_COMPONENT_REF=CONTEXT_COMPONENT_REF, TARGET_P_PORT_REF=TARGET_P_PORT_REF
+        )
+        p_port_in_composition_instance_ref.set_parent(parent)
+        return p_port_in_composition_instance_ref
+
+    @classmethod
+    def create_ar_r_port_in_composition_instance_ref(
+        cls,
+        CONTEXT_COMPONENT_REF: autosar44.CONTEXT_COMPONENT_REFType,
+        TARGET_R_PORT_REF: autosar44.TARGET_R_PORT_REFType,
+        parent=None,
+    ) -> autosar44.P_PORT_IN_COMPOSITION_INSTANCE_REF:
+        r_port_in_composition_instance_ref = autosar44.R_PORT_IN_COMPOSITION_INSTANCE_REF(
+            CONTEXT_COMPONENT_REF=CONTEXT_COMPONENT_REF, TARGET_R_PORT_REF=TARGET_R_PORT_REF
+        )
+        r_port_in_composition_instance_ref.set_parent(parent)
+        return r_port_in_composition_instance_ref

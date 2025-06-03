@@ -332,22 +332,6 @@ class Function(FunctionBase):
 
     @staticmethod
     @pass_context
-    def get_cur_appl_runnable_list(context):
-        task_list = Function.get_cur_all_task_list(context)
-        runnable_list = []
-        for task_name in task_list:
-            if task_name not in context["task_mappings"]:
-                continue
-            for runnable in context["task_mappings"][task_name]["schedulable_entity"].values():
-                for event_info in runnable["os_event"].values():
-                    if event_info["event_type"] in ["InitEvent", "TimingEvent", "DataReceivedEvent"]:
-                        runnable_args = Function.get_runnable_args(context, runnable["name"], task_name) or "void"
-                        runnable_list.append({"name": runnable["name"], "args": runnable_args})
-        runnable_list.sort(key=lambda x: (len(x["name"]), x["name"].lower()))
-        return runnable_list
-
-    @staticmethod
-    @pass_context
     def get_init_event_runnable_list(context, task_name):
         runnable_list = []
         runnables = list(context["task_mappings"][task_name]["schedulable_entity"].values())
@@ -441,6 +425,35 @@ class Function(FunctionBase):
             server_runnable["return_value"] = return_value
             runnable_list.append(server_runnable)
         return runnable_list
+
+    @staticmethod
+    @pass_context
+    def get_ordered_datatype_dict(context):
+        return context["datatypes"]
+
+    @staticmethod
+    @pass_context
+    def get_idt_constraint_list(context):
+        constr_list = []
+        for idt in context["datatypes"].values():
+            if not idt["constraint"]:
+                continue
+            constr = idt["constraint"]
+            if idt["basetype"][0] == "u":
+                constr_list.append(
+                    {
+                        "idt_name": idt["name"],
+                        "max_shown": f'{int(float(constr["max"]))}U',
+                        "min_shown": f'{int(float(constr["min"]))}U',
+                    }
+                )
+            elif idt["basetype"][0] == "f":
+                constr_list.append(
+                    {"idt_name": idt["name"], "max_shown": f'{constr["max"]}F', "min_shown": f'{constr["min"]}F'}
+                )
+            # TODO
+        constr_list.sort(key=lambda x: ("args" in x.keys(), x["idt_name"].lower()))
+        return constr_list
 
     @staticmethod
     @pass_context
@@ -575,6 +588,9 @@ class Function(FunctionBase):
     @staticmethod
     def _pack_sr_explicit_pport_with_prport(pport):
         pport_dict = {}
+        struct_type, struct_name = Function._update_struct_datatype_and_name_of_boolean_buff(pport)
+        buff_struct_type = struct_type
+        buff_struct_name = struct_name
         pport_dict.update(
             {
                 "sort_name": pport["sort_name"],
@@ -595,6 +611,8 @@ class Function(FunctionBase):
                 "runnable": pport["symbol"],
                 "m_to_n": pport["m_to_n"],
                 "intra_osa": pport.get("intra_osa", False),
+                "buff_struct_type": buff_struct_type,
+                "buff_struct_name": buff_struct_name,
             }
         )
         return pport_dict
@@ -602,6 +620,9 @@ class Function(FunctionBase):
     @staticmethod
     def _pack_sr_explicit_rport_with_prport(rport):
         rport_dict = {}
+        struct_type, struct_name = Function._update_struct_datatype_and_name_of_boolean_buff(rport)
+        buff_struct_type = struct_type
+        buff_struct_name = struct_name
         rport_dict.update(
             {
                 "sort_name": rport["sort_name"],
@@ -622,6 +643,8 @@ class Function(FunctionBase):
                 "runnable": rport["symbol"],
                 "m_to_n": rport["m_to_n"],
                 "intra_osa": rport.get("intra_osa", False),
+                "buff_struct_type": buff_struct_type,
+                "buff_struct_name": buff_struct_name,
             }
         )
         return rport_dict
@@ -634,22 +657,35 @@ class Function(FunctionBase):
         counter_category = None
         local_counter = None
         global_counter = None
+        buff_struct_type = None
+        buff_struct_name = None
+        sender_buff_struct_type = []
+        sender_buff_struct_name = []
         if pport["m_to_n"] == "n1":
             # N:1
             rport = pport["conn_asw_ports"][0]
             single_rec_buff_for_n1 = pport["single_rec_buff_for_n1"]
             if single_rec_buff_for_n1:
                 variable = "Rte_" + rport["swc_port_var"]
+                struct_type, struct_name = Function._update_struct_datatype_and_name_of_boolean_buff(rport)
+                buff_struct_type = struct_type
+                buff_struct_name = struct_name
             else:
                 variable = "Rte_" + pport["swc_port_var"]
                 buff_category = pport["buff_category"]
                 local_counter = "Rte_Counter_Sr_Local_" + pport["swc_port_var"]
                 global_counter = "Rte_Counter_Sr_Global_" + rport["swc_port_var"]
                 counter_category = pport["counter_category"]
+                struct_type, struct_name = Function._update_struct_datatype_and_name_of_boolean_buff(pport)
+                sender_buff_struct_type.append(struct_type)
+                sender_buff_struct_name.append(struct_name)
         else:
             # 1:1 / 1:N
             variable = "Rte_" + pport["swc_port_var"]
             buff_category = pport["buff_category"]
+            struct_type, struct_name = Function._update_struct_datatype_and_name_of_boolean_buff(pport)
+            buff_struct_type = struct_type
+            buff_struct_name = struct_name
 
         port_dict = {
             "sort_name": pport["sort_name"],
@@ -676,6 +712,10 @@ class Function(FunctionBase):
             "intra_osa": pport.get("intra_osa", False),
             "dm_macro_api": pport.get("dm_macro_api", False),
             "mapping_to_signals": pport.get("mapping_to_signals", []),
+            "buff_struct_type": buff_struct_type,
+            "buff_struct_name": buff_struct_name,
+            "sender_buff_struct_type": sender_buff_struct_type,
+            "sender_buff_struct_name": sender_buff_struct_name,
         }
         return port_dict
 
@@ -688,6 +728,10 @@ class Function(FunctionBase):
         all_sender_buffer = []
         all_sender_counter = []
         variable = None
+        buff_struct_type = None
+        buff_struct_name = None
+        sender_buff_struct_type = []
+        sender_buff_struct_name = []
         if rport["m_to_n"] in {"0", "mn"}:
             # datamapping
             var_osa = rport["osapplication"]
@@ -697,12 +741,18 @@ class Function(FunctionBase):
             variable = "Rte_" + rport["swc_port_var"]
             single_rec_buff_for_n1 = rport["single_rec_buff_for_n1"]
             buff_category = rport["buff_category"]
+            struct_type, struct_name = Function._update_struct_datatype_and_name_of_boolean_buff(rport)
+            buff_struct_type = struct_type
+            buff_struct_name = struct_name
             if not single_rec_buff_for_n1:
                 counter_category = rport["counter_category"]
                 global_counter = "Rte_Counter_Sr_Global_" + rport["swc_port_var"]
                 for pport in rport["conn_asw_ports"]:
                     all_sender_buffer.append(("Rte_" + pport["swc_port_var"], pport["osapplication"]))
                     all_sender_counter.append(("Rte_Counter_Sr_Local_" + pport["swc_port_var"], pport["osapplication"]))
+                    struct_type, struct_name = Function._update_struct_datatype_and_name_of_boolean_buff(pport)
+                    sender_buff_struct_type.append(struct_type)
+                    sender_buff_struct_name.append(struct_name)
             var_osa = rport["osapplication"]
             port_for_data_type = rport
         else:
@@ -711,6 +761,9 @@ class Function(FunctionBase):
             variable = "Rte_" + pport["swc_port_var"]
             var_osa = pport["osapplication"]
             port_for_data_type = pport
+            struct_type, struct_name = Function._update_struct_datatype_and_name_of_boolean_buff(pport)
+            buff_struct_type = struct_type
+            buff_struct_name = struct_name
         rport_dict = {
             "sort_name": rport["sort_name"],
             "name": rport["name"],
@@ -737,6 +790,10 @@ class Function(FunctionBase):
             "intra_osa": rport.get("intra_osa", False),
             "dm_macro_api": rport.get("dm_macro_api", False),
             "mapping_to_signals": rport.get("mapping_to_signals", []),
+            "buff_struct_type": buff_struct_type,
+            "buff_struct_name": buff_struct_name,
+            "sender_buff_struct_type": sender_buff_struct_type,
+            "sender_buff_struct_name": sender_buff_struct_name,
         }
         return rport_dict
 
@@ -854,6 +911,24 @@ class Function(FunctionBase):
 
     @staticmethod
     @pass_context
+    def _update_struct_datatype_and_name_of_boolean_buff(port):
+        struct_type = None
+        struct_name = None
+        appl_name = port["var_osa"] if "var_osa" in port else port["osapplication"]
+        if (port.get("buff_category", None) == "intra_osa" or port.get("intra_osa", False)) and port["arg"][
+            "init_value"
+        ]["is_bool"]:
+            # 当前只优化同分区内的buffer
+            if port["arg"]["init_value"]["is_zero_init"]:
+                struct_type = f"Rte_Private_{appl_name}_ZeroBool_VarType"
+                struct_name = f"Rte_Private_{appl_name}_ZeroBool_Vars"
+            else:
+                struct_type = f"Rte_Private_{appl_name}_NonZeroBool_VarType"
+                struct_name = f"Rte_Private_{appl_name}_NonZeroBool_Vars"
+        return struct_type, struct_name
+
+    @staticmethod
+    @pass_context
     def get_swc_sr_explicit_macro_render_rport_list(context, runnable=None):
         rport_list = []
         for rport in Function._get_swc_sr_explicit_connected_rport_list(context["swc"]):
@@ -898,6 +973,9 @@ class Function(FunctionBase):
                 "variable": port["variable"],
                 "arg": port["arg"],
                 "memmap_infix": memmap_infix,
+                "is_zero_init": port["arg"]["init_value"]["is_zero_init"],
+                "buff_struct_type": port.get("buff_struct_type", None),
+                "buff_struct_name": port.get("buff_struct_name", None),
             }
         for memmap_infix, vars in variable_dict.items():
             sort_variable_dict[memmap_infix] = dict(sorted(vars.items()))
@@ -1131,9 +1209,13 @@ class Function(FunctionBase):
 
     @staticmethod
     @pass_context
-    def get_sr_nonqueue_intra_osa_variable_dict_by_appl(context, appl_name=None):
+    def get_sr_nonqueue_intra_osa_variable_dict_by_appl(context, appl_name=None, filter="all"):
         variable_dict = {}
         sort_variable_dict = {}
+        variable_dict_is_bool = {}
+        sort_variable_dict_is_bool = {}
+        variable_dict_not_bool = {}
+        sort_variable_dict_not_bool = {}
         for swc in context["asw_cfg"].values():
             variables = {}
             if appl_name:
@@ -1156,10 +1238,28 @@ class Function(FunctionBase):
                 if swc["osapplication"] not in variable_dict:
                     variable_dict.update({swc["osapplication"]: {}})
                 variable_dict[swc["osapplication"]].update(variables)
-        for _appl, appl_variables in variable_dict.items():
-            # appl_variables.sort(key=lambda x: ('args' in x.keys(), x['variable'].lower()))
-            sort_variable_dict[_appl] = dict(sorted(appl_variables.items()))
-        return dict(sorted(sort_variable_dict.items()))
+                if swc["osapplication"] not in variable_dict_is_bool:
+                    variable_dict_is_bool.update({swc["osapplication"]: {}})
+                if swc["osapplication"] not in variable_dict_not_bool:
+                    variable_dict_not_bool.update({swc["osapplication"]: {}})
+                for variable in variables.values():
+                    if variable["arg"]["init_value"]["is_bool"]:
+                        variable_dict_is_bool[swc["osapplication"]].update({variable["variable"]: variable})
+                    else:
+                        variable_dict_not_bool[swc["osapplication"]].update({variable["variable"]: variable})
+        if filter == "nonbool":
+            for _appl, appl_variables in variable_dict_not_bool.items():
+                sort_variable_dict_not_bool[_appl] = dict(sorted(appl_variables.items()))
+            return dict(sorted(sort_variable_dict_not_bool.items()))
+        elif filter == "bool":
+            for _appl, appl_variables in variable_dict_is_bool.items():
+                sort_variable_dict_is_bool[_appl] = dict(sorted(appl_variables.items()))
+            return dict(sorted(sort_variable_dict_is_bool.items()))
+        else:
+            # filter == 'all'
+            for _appl, appl_variables in variable_dict.items():
+                sort_variable_dict[_appl] = dict(sorted(appl_variables.items()))
+            return dict(sorted(sort_variable_dict.items()))
 
     @staticmethod
     @pass_context
@@ -1275,7 +1375,7 @@ class Function(FunctionBase):
         is_zero = False
         if datatype and init_value:
             init_value_tuple = AutosarUtils.get_sr_var_init_value(datatype, init_value)
-            if init_value_tuple is not None and len(init_value_tuple) == 2:
+            if init_value_tuple is not None and len(init_value_tuple) == 3:
                 is_zero = init_value_tuple[1] is True
         return is_zero
 
@@ -1469,6 +1569,58 @@ class Function(FunctionBase):
 
     @staticmethod
     @pass_context
+    def get_sr_nonqueue_intra_osa_without_boolean_variable_dict_by_appl(context, appl_name):
+        # 取sr_nonqueue_intra_osa中的非bool变量
+        rv = {}
+        rv = Function.get_sr_nonqueue_intra_osa_variable_dict_by_appl(context, appl_name, filter="nonbool")
+        return rv
+
+    @staticmethod
+    @pass_context
+    def get_boolean_variables_init_value_list(context, appl_name, nonzero_boolean_vars):
+        # 将组成结构体的所有bool变量的非0/FALSE初始值组成字符串
+        rv = ""
+        init_value_list = []
+        for var in nonzero_boolean_vars[appl_name].values():
+            init_value_list.append(var["arg"]["init_value"]["value"]["value"])
+            # init_value_list.append('.' + var['variable'] + ' = 1U')
+        if init_value_list:
+            rv = "{" + ", ".join(init_value_list) + "}"
+        else:
+            rv = {0}
+        return rv
+
+    @staticmethod
+    @pass_context
+    def get_sr_nonqueue_intra_osa_boolean_variable_dict_by_appl(context, appl_name, filter="all"):
+        # 取appl下所有SWC中的sr_nonqueue_intra_osa bool变量，将其转成位字段，节省RAM空间
+        variable_dict = {}
+        sort_variable_dict = {}
+        temp_variable_dict = Function.get_sr_nonqueue_intra_osa_variable_dict_by_appl(context, appl_name, filter="bool")
+        if temp_variable_dict:
+            if filter == "nonzero":
+                for name, value in temp_variable_dict.get(appl_name, {}).items():
+                    if value["arg"]["init_value"]["is_zero_init"]:
+                        continue
+                    if appl_name not in variable_dict:
+                        variable_dict.update({appl_name: {}})
+                    variable_dict[appl_name].update({name: value})
+            elif filter == "zero":
+                for name, value in temp_variable_dict.get(appl_name, {}).items():
+                    if not value["arg"]["init_value"]["is_zero_init"]:
+                        continue
+                    if appl_name not in variable_dict:
+                        variable_dict.update({appl_name: {}})
+                    variable_dict[appl_name].update({name: value})
+            else:
+                # filter == "all"
+                variable_dict = temp_variable_dict
+        for appl, appl_variables in variable_dict.items():
+            sort_variable_dict[appl] = dict(sorted(appl_variables.items()))
+        return sort_variable_dict
+
+    @staticmethod
+    @pass_context
     def get_swc_sr_implicit_macro_render_pport_list(context, runnable=None):
         pport_list = []
         for pport in Function._get_swc_sr_implicit_all_pport_list(context["swc"]):
@@ -1548,12 +1700,19 @@ class Function(FunctionBase):
             counter_category = None
             local_counter = None
             global_counter = None
+            buff_struct_type = None
+            buff_struct_name = None
+            sender_buff_struct_type = []
+            sender_buff_struct_name = []
             if pport["m_to_n"] not in {"0", "mn"}:
                 if pport["m_to_n"] == "n1":
                     rport = pport["conn_asw_ports"][0]
                     single_rec_buff_for_n1 = pport["single_rec_buff_for_n1"]
                     if single_rec_buff_for_n1:
                         variable = "Rte_" + rport["swc_port_var"]
+                        struct_type, struct_name = Function._update_struct_datatype_and_name_of_boolean_buff(rport)
+                        buff_struct_type = struct_type
+                        buff_struct_name = struct_name
                     else:
                         variable = "Rte_" + pport["swc_port_var"]
                         buff_category = pport["buff_category"]
@@ -1561,10 +1720,16 @@ class Function(FunctionBase):
                         counter_category = pport["counter_category"]
                         local_counter = "Rte_Counter_Sr_Local_" + pport["swc_port_var"]
                         global_counter = "Rte_Counter_Sr_Global_" + rport["swc_port_var"]
+                        struct_type, struct_name = Function._update_struct_datatype_and_name_of_boolean_buff(pport)
+                        sender_buff_struct_type.append(struct_type)
+                        sender_buff_struct_name.append(struct_name)
                 else:
                     variable = "Rte_" + pport["swc_port_var"]
                     buff_category = pport["buff_category"]
                     buff_memmap_category = pport["buff_memmap_category"]
+                    struct_type, struct_name = Function._update_struct_datatype_and_name_of_boolean_buff(pport)
+                    buff_struct_type = struct_type
+                    buff_struct_name = struct_name
             else:
                 variable = "Rte_" + pport["swc_port_var"]
             arg = {
@@ -1601,6 +1766,10 @@ class Function(FunctionBase):
                     "signal_category": pport["signal_category"],
                     "imp_sr_copy_buf_opt": pport["imp_sr_copy_buf_opt"],
                     "imp_sr_buf_opt_intra_osa": pport["imp_sr_buf_opt_intra_osa"],
+                    "buff_struct_type": buff_struct_type,
+                    "buff_struct_name": buff_struct_name,
+                    "sender_buff_struct_type": sender_buff_struct_type,
+                    "sender_buff_struct_name": sender_buff_struct_name,
                 }
             )
         return pport_list
@@ -1618,6 +1787,10 @@ class Function(FunctionBase):
             global_counter = None
             all_sender_buffer = []
             all_sender_counter = []
+            buff_struct_type = None
+            buff_struct_name = None
+            sender_buff_struct_type = []
+            sender_buff_struct_name = []
             if rport["m_to_n"] not in {"0", "mn"}:
                 if rport["m_to_n"] == "n1":
                     # N:1
@@ -1627,6 +1800,9 @@ class Function(FunctionBase):
                     single_rec_buff_for_n1 = rport["single_rec_buff_for_n1"]
                     buff_category = rport["buff_category"]
                     buff_memmap_category = rport["buff_memmap_category"]
+                    struct_type, struct_name = Function._update_struct_datatype_and_name_of_boolean_buff(rport)
+                    buff_struct_type = struct_type
+                    buff_struct_name = struct_name
                     if not single_rec_buff_for_n1:
                         counter_category = rport["counter_category"]
                         global_counter = "Rte_Counter_Sr_Global_" + rport["swc_port_var"]
@@ -1635,13 +1811,20 @@ class Function(FunctionBase):
                             all_sender_counter.append(
                                 ("Rte_Counter_Sr_Local_" + pport["swc_port_var"], pport["osapplication"])
                             )
-
+                            struct_type, struct_name = Function._update_struct_datatype_and_name_of_boolean_buff(pport)
+                            sender_buff_struct_type.append(struct_type)
+                            sender_buff_struct_name.append(struct_name)
                 else:
                     # 1:1 / 1:N
                     connected_pport = rport["conn_asw_ports"][0]
                     variable = "Rte_" + connected_pport["swc_port_var"]
                     var_osa = connected_pport["osapplication"]
                     port_for_data_type = connected_pport
+                    struct_type, struct_name = Function._update_struct_datatype_and_name_of_boolean_buff(
+                        connected_pport
+                    )
+                    buff_struct_type = struct_type
+                    buff_struct_name = struct_name
             else:
                 variable = "Rte_" + rport["swc_port_var"]
                 var_osa = swc["osapplication"]
@@ -1680,6 +1863,10 @@ class Function(FunctionBase):
                     "signal_category": rport["signal_category"],
                     "imp_sr_copy_buf_opt": rport["imp_sr_copy_buf_opt"],
                     "imp_sr_buf_opt_intra_osa": rport["imp_sr_buf_opt_intra_osa"],
+                    "buff_struct_type": buff_struct_type,
+                    "buff_struct_name": buff_struct_name,
+                    "sender_buff_struct_type": sender_buff_struct_type,
+                    "sender_buff_struct_name": sender_buff_struct_name,
                 }
             )
         return rport_list
@@ -2079,7 +2266,9 @@ class Function(FunctionBase):
             Function._set_implicit_rport(port_dict, swc)
         for port in port_dict.values():
             event_set = set(map(lambda x: x["task_id"] + "&" + x["event_mask"] if x else "&", port["set_events"]))
-            set_events = list(map(lambda x: {"task_id": x.split("&")[0], "event_mask": x.split("&")[1]}, event_set))
+            set_events = list(
+                map(lambda x: {"task_id": x.split("&")[0].upper(), "event_mask": x.split("&")[1].upper()}, event_set)
+            )
             set_events.sort(key=lambda x: ("task_id" in x, x["task_id"] + x["event_mask"]))
             port["set_events"] = set_events
         return port_dict
@@ -2107,19 +2296,32 @@ class Function(FunctionBase):
                 local_counter = None
                 global_counter = None
                 lock_id = None
+                buff_struct_type = None
+                buff_struct_name = None
+                sender_buff_struct_type = []
+                sender_buff_struct_name = []
                 # the ioc_id has the same name as variable_name
                 if pport["m_to_n"] in {"11", "1n"}:
                     variable_name = "Rte_" + pport["swc_port_var"]
                     lock_id = variable_name
+                    struct_type, struct_name = Function._update_struct_datatype_and_name_of_boolean_buff(pport)
+                    buff_struct_type = struct_type
+                    buff_struct_name = struct_name
                 else:
                     rport = pport["conn_asw_ports"][0]
                     lock_id = "Rte_" + rport["swc_port_var"]
                     if pport["single_rec_buff_for_n1"]:
                         variable_name = "Rte_" + rport["swc_port_var"]
+                        struct_type, struct_name = Function._update_struct_datatype_and_name_of_boolean_buff(rport)
+                        buff_struct_type = struct_type
+                        buff_struct_name = struct_name
                     else:
                         variable_name = "Rte_" + pport["swc_port_var"]
                         local_counter = "Rte_Counter_Sr_Local_" + pport["swc_port_var"]
                         global_counter = "Rte_Counter_Sr_Global_" + rport["swc_port_var"]
+                        struct_type, struct_name = Function._update_struct_datatype_and_name_of_boolean_buff(pport)
+                        sender_buff_struct_type.append(struct_type)
+                        sender_buff_struct_name.append(struct_name)
                 pport_data.update(
                     {
                         "lock": pport["lock"],
@@ -2134,6 +2336,10 @@ class Function(FunctionBase):
                         "signal_category": pport["signal_category"],
                         "message_name": pport["message_name"] if "message_name" in pport else None,
                         "network": pport["network"] if "network" in pport else None,
+                        "buff_struct_type": buff_struct_type,
+                        "buff_struct_name": buff_struct_name,
+                        "sender_buff_struct_type": sender_buff_struct_type,
+                        "sender_buff_struct_name": sender_buff_struct_name,
                     }
                 )
 
@@ -2169,13 +2375,23 @@ class Function(FunctionBase):
                 all_sender_buffer = []
                 all_sender_counter = []
                 global_counter = None
+                buff_struct_type = None
+                buff_struct_name = None
+                sender_buff_struct_type = []
+                sender_buff_struct_name = []
                 if rport["m_to_n"] in {"11", "1n"}:
                     pport = rport["conn_asw_ports"][0]
                     variable_name = "Rte_" + pport["swc_port_var"]
                     lock_id = variable_name
+                    struct_type, struct_name = Function._update_struct_datatype_and_name_of_boolean_buff(pport)
+                    buff_struct_type = struct_type
+                    buff_struct_name = struct_name
                 else:
                     variable_name = "Rte_" + rport["swc_port_var"]
                     lock_id = variable_name
+                    struct_type, struct_name = Function._update_struct_datatype_and_name_of_boolean_buff(rport)
+                    buff_struct_type = struct_type
+                    buff_struct_name = struct_name
                     if not rport["single_rec_buff_for_n1"]:
                         global_counter = "Rte_Counter_Sr_Global_" + rport["swc_port_var"]
                         for pport in rport["conn_asw_ports"]:
@@ -2183,6 +2399,9 @@ class Function(FunctionBase):
                             all_sender_counter.append(
                                 ("Rte_Counter_Sr_Local_" + pport["swc_port_var"], pport["osapplication"])
                             )
+                            struct_type, struct_name = Function._update_struct_datatype_and_name_of_boolean_buff(pport)
+                            sender_buff_struct_type = struct_type
+                            sender_buff_struct_name = struct_name
                 rport_data.update(
                     {
                         "lock": rport["lock"],
@@ -2199,6 +2418,10 @@ class Function(FunctionBase):
                         "signal_category": rport["signal_category"],
                         "message_name": rport["message_name"] if "message_name" in rport else None,
                         "network": rport["network"] if "network" in rport else None,
+                        "buff_struct_type": buff_struct_type,
+                        "buff_struct_name": buff_struct_name,
+                        "sender_buff_struct_type": sender_buff_struct_type,
+                        "sender_buff_struct_name": sender_buff_struct_name,
                     }
                 )
 
@@ -2424,13 +2647,13 @@ class Function(FunctionBase):
                 if mode_switch_event["task"] == task_name and mode_switch_event["osapplication"] == appl_name:
                     mode_switch_event_list.append(mode_switch_event)
 
-        defalt_event_mask = f"Rte_Ev_MS_{task_name}"
+        defalt_event_mask = f"Rte_Ev_MS_{task_name}".upper()
         if len(mode_switch_event_list):
             mode_switch_event_mask_list.append(defalt_event_mask)
         for mode_switch_event in mode_switch_event_list:
             swc_name = mode_switch_event["swc_name"]
             runnable_name = mode_switch_event["runnable_name"]
-            event_mask_name = f"Rte_Ev_Run_{swc_name}_{runnable_name}"
+            event_mask_name = f"Rte_Ev_Run_{swc_name}_{runnable_name}".upper()
             mode_switch_event_mask_list.append(event_mask_name)
         mode_switch_event_mask_list.sort()
         return mode_switch_event_mask_list
@@ -2560,6 +2783,25 @@ class Function(FunctionBase):
         mode_switch_pports.sort(key=lambda x: (x["swc_name"], x["port_name"], x["mode_group_prototype"]))
         mode_switch_rports.sort(key=lambda x: (x["swc_name"], x["port_name"], x["mode_group_prototype"]))
         return mode_switch_rports, mode_switch_pports
+
+    @staticmethod
+    @pass_context
+    def get_mode_group_list_in_swc(context):
+        # Used for Rte_SWC_Type.h generation
+        all_mode_group = context["mode_declaration_group"]
+        mode_group_set = set()
+        mode_group_list = []
+        for pport in context["swc"]["pports"].values():
+            if pport["type"] == "ModeSwitch" and pport["mode_group"] in all_mode_group:
+                if pport["mode_group"] not in mode_group_set:
+                    mode_group_set.add(pport["mode_group"])
+                    mode_group_list.append(all_mode_group[pport["mode_group"]])
+        for rport in context["swc"]["rports"].values():
+            if rport["type"] == "ModeNotification" and rport["mode_group"] in all_mode_group:
+                if rport["mode_group"] not in mode_group_set:
+                    mode_group_set.add(rport["mode_group"])
+                    mode_group_list.append(all_mode_group[rport["mode_group"]])
+        return mode_group_list
 
     @staticmethod
     @pass_context
@@ -3362,7 +3604,7 @@ class Function(FunctionBase):
             next_mode = transition_event["next_mode"]["name"]
             runnable_name = transition_event["runnable_name"]
             swc_name = transition_event["swc_name"]
-            ev_mask_name = f"Rte_Ev_Run_{swc_name}_{runnable_name}"
+            ev_mask_name = f"Rte_Ev_Run_{swc_name}_{runnable_name}".upper()
             if (pre_mode, next_mode) not in events_ev_mask_list_for_mode:
                 events_ev_mask_list_for_mode.update({(pre_mode, next_mode): [ev_mask_name]})
                 continue
@@ -3393,7 +3635,7 @@ class Function(FunctionBase):
             mode = entry_event["mode"]["value"]
             swc_name = entry_event["swc_name"]
             runnable_name = entry_event["runnable_name"]
-            ev_mask_name = f"Rte_Ev_Run_{swc_name}_{runnable_name}"
+            ev_mask_name = f"Rte_Ev_Run_{swc_name}_{runnable_name}".upper()
             if mode not in entry_events_ev_mask_list_for_mode:
                 entry_events_ev_mask_list_for_mode.update({mode: [ev_mask_name]})
                 continue
@@ -3410,7 +3652,7 @@ class Function(FunctionBase):
             exit_mode = exit_event["mode"]["value"]
             swc_name = exit_event["swc_name"]
             runnable_name = exit_event["runnable_name"]
-            ev_mask_name = f"Rte_Ev_Run_{swc_name}_{runnable_name}"
+            ev_mask_name = f"Rte_Ev_Run_{swc_name}_{runnable_name}".upper()
             if exit_mode not in exit_events_ev_mask_list_for_mode:
                 exit_events_ev_mask_list_for_mode.update({exit_mode: [ev_mask_name]})
                 continue
@@ -3511,6 +3753,25 @@ class Function(FunctionBase):
 
     @staticmethod
     @pass_context
+    def get_mode_switch_pport_use_explicit_order_in_swc_list(context):
+        explicit_order_dict = {}
+        all_mode_group = context["mode_declaration_group"]
+        for swc in context["asw_cfg"].values():
+            for pport in swc["pports"].values():
+                if (
+                    pport["type"] == "ModeSwitch"
+                    and pport["connected_port_path_list"]
+                    and pport["mode_group_category"] == "EXPLICIT_ORDER"
+                ):
+                    swc_name = pport["swc_name"]
+                    mode_group = pport["mode_group"]
+                    if (swc_name, mode_group) not in explicit_order_dict:
+                        explicit_order_dict.update({(swc_name, mode_group): all_mode_group[mode_group]})
+                    # more than one ports uesed same port interface, count only once
+        return explicit_order_dict
+
+    @staticmethod
+    @pass_context
     def get_mode_switch_port_unconnected_in_swc_list(context):
         mode_switch_rports = []
         mode_switch_pports = []
@@ -3577,10 +3838,35 @@ class Function(FunctionBase):
     @pass_context
     def get_appl_swc_name_list(context):
         swc_name_set = set()
+        all_mode_group = context["mode_declaration_group"]
         for swc in context["asw_cfg"].values():
             if swc["type"] not in AutosarUtils.GEN_FILE_COMPONENT_TYPE:
                 continue
             swc_name_set.add(swc["name"])
+        for swc in context["appls_asw_cfg"].values():
+            use_mode_swc = False
+            for pport in swc["pports"].values():
+                if (
+                    pport["type"] == "ModeSwitch"
+                    and pport["connected_port_path_list"]
+                    and pport["mode_group"] in all_mode_group
+                ):
+                    swc_name_set.add(swc["name"])
+                    use_mode_swc = True
+                    break
+            if use_mode_swc:
+                continue
+            for rport in swc["rports"].values():
+                if (
+                    rport["type"] == "ModeNotification"
+                    and rport["connected_component_name"]
+                    and rport["mode_group"] in all_mode_group
+                ):
+                    swc_name_set.add(swc["name"])
+                    use_mode_swc = True
+                    break
+            if use_mode_swc:
+                continue
         swc_name_list = list(swc_name_set)
         swc_name_list.sort(key=lambda x: (len(x), x.lower()))
         return swc_name_list
@@ -3634,22 +3920,38 @@ class Function(FunctionBase):
                     # macro implementations
                     continue
                 is_func_impl = True
+                buff_struct_type = None
+                buff_struct_name = None
+                sender_buff_struct_type = []
+                sender_buff_struct_name = []
                 # ioc_id has the same name as buffer_name
                 if pport["m_to_n"] == "n1":
                     rport = pport["conn_asw_ports"][0]
                     pport["lock_id"] = "Rte_" + rport["swc_port_var"]
                     if pport["single_rec_buff_for_n1"]:
                         buffer_name = "Rte_" + rport["swc_port_var"]
+                        struct_type, struct_name = Function._update_struct_datatype_and_name_of_boolean_buff(rport)
+                        buff_struct_type = struct_type
+                        buff_struct_name = struct_name
                     else:
                         buffer_name = "Rte_" + pport["swc_port_var"]
                         pport["local_counter"] = "Rte_Counter_Sr_Local_" + pport["swc_port_var"]
                         pport["global_counter"] = "Rte_Counter_Sr_Global_" + rport["swc_port_var"]
+                        struct_type, struct_name = Function._update_struct_datatype_and_name_of_boolean_buff(pport)
+                        sender_buff_struct_type.append(struct_type)
+                        sender_buff_struct_name.append(struct_name)
                 else:
                     buffer_name = "Rte_" + pport["swc_port_var"]
                     pport["lock_id"] = buffer_name
+                    struct_type, struct_name = Function._update_struct_datatype_and_name_of_boolean_buff(pport)
+                    buff_struct_type = struct_type
+                    buff_struct_name = struct_name
                 pport["spinlock_api_postfix"] = "Write" if pport.get("spinlock_cfg", {}).get("is_rw", False) else ""
                 pport["buffer_name"] = buffer_name
-
+                pport["buff_struct_type"] = buff_struct_type
+                pport["buff_struct_name"] = buff_struct_name
+                pport["sender_buff_struct_type"] = (sender_buff_struct_type,)
+                pport["sender_buff_struct_name"] = sender_buff_struct_name
                 if is_func_impl:
                     for signal in pport.get("data_mapping_details", []):
                         Function.signal_compu_method_trans(signal, False)
@@ -3743,13 +4045,21 @@ class Function(FunctionBase):
                         continue
                     if rport["m_to_n"] in {"0", "mn"}:
                         continue
+                    buff_struct_type = None
+                    buff_struct_name = None
+                    sender_buff_struct_type = []
+                    sender_buff_struct_name = []
                     # the ioc_id has the same name as buffer_name
                     if rport["m_to_n"] == "n1":
                         buffer_name = "Rte_" + rport["swc_port_var"]
                         rport["lock_id"] = "Rte_" + rport["swc_port_var"]
+                        struct_type, struct_name = Function._update_struct_datatype_and_name_of_boolean_buff(rport)
+                        buff_struct_type = struct_type
+                        buff_struct_name = struct_name
                         if not rport["single_rec_buff_for_n1"]:
                             rport["all_sender_buffer"] = []
                             rport["all_sender_counter"] = []
+                            rport["all_sender_struct"] = []
                             rport["global_counter"] = "Rte_Counter_Sr_Global_" + rport["swc_port_var"]
                             for pport in rport["conn_asw_ports"]:
                                 rport["all_sender_buffer"].append(
@@ -3758,12 +4068,24 @@ class Function(FunctionBase):
                                 rport["all_sender_counter"].append(
                                     ("Rte_Counter_Sr_Local_" + pport["swc_port_var"], pport["osapplication"])
                                 )
+                                struct_type, struct_name = Function._update_struct_datatype_and_name_of_boolean_buff(
+                                    pport
+                                )
+                                sender_buff_struct_type.append(struct_type)
+                                sender_buff_struct_name.append(struct_name)
                     else:
                         pport = rport["conn_asw_ports"][0]
                         buffer_name = "Rte_" + pport["swc_port_var"]
                         rport["lock_id"] = buffer_name
+                        struct_type, struct_name = Function._update_struct_datatype_and_name_of_boolean_buff(pport)
+                        buff_struct_type = struct_type
+                        buff_struct_name = struct_name
                     rport["spinlock_api_postfix"] = "Read" if rport.get("spinlock_cfg", {}).get("is_rw", False) else ""
                     rport["buffer_name"] = buffer_name
+                    rport["buff_struct_type"] = buff_struct_type
+                    rport["buff_struct_name"] = buff_struct_name
+                    rport["sender_buff_struct_type"] = sender_buff_struct_type
+                    rport["sender_buff_struct_name"] = sender_buff_struct_name
                     rport_list.append(rport)
         rport_list.sort(key=lambda x: ("args" in x.keys(), x["sort_name"].lower()))
         return rport_list
@@ -4011,16 +4333,19 @@ class Function(FunctionBase):
                     exclusive_area_codegen_dict["suspend"] = "GetResource"
                     exclusive_area_codegen_dict["resume"] = "ReleaseResource"
                     exclusive_area_codegen_dict["input_param"] = (
-                        "(ResourceType)Rte_Res_" + exclusive_area["module_name"] + "_" + exclusive_area["eas_name"]
+                        "(ResourceType)RTE_RES_"
+                        + exclusive_area["module_name"].upper()
+                        + "_"
+                        + exclusive_area["eas_name"].upper()
                     )
                 elif exclusive_area["imp_mechanism"] == "OS_SPINLOCK":
                     exclusive_area_codegen_dict["suspend"] = "GetSpinlock"
                     exclusive_area_codegen_dict["resume"] = "ReleaseSpinlock"
                     exclusive_area_codegen_dict["input_param"] = (
-                        "(SpinlockIdType)Rte_Spinlock_"
-                        + exclusive_area["module_name"]
+                        "(SpinlockIdType)RTE_SPINLOCK_"
+                        + exclusive_area["module_name"].upper()
                         + "_"
-                        + exclusive_area["eas_name"]
+                        + exclusive_area["eas_name"].upper()
                     )
                 elif exclusive_area["imp_mechanism"] == "NONE":
                     pass
@@ -4131,7 +4456,7 @@ class Function(FunctionBase):
                 context.get("sr_dm_glob_vars", {}).get("individual", {}).get("buff", {}).get(osa, {}).items()
             ):
                 for _, buff_info in buffs.items():
-                    init_value_str, is_zero_init = AutosarUtils.get_sr_var_init_value(
+                    init_value_str, is_zero_init, is_bool = AutosarUtils.get_sr_var_init_value(
                         buff_info["datatype"], buff_info["init_value"]
                     )
                     buff_info["init_category"] = (
@@ -4149,7 +4474,7 @@ class Function(FunctionBase):
             for _, osa_info in context.get("sr_dm_glob_vars", {}).get("individual", {}).get("buff", {}).items():
                 for _, buffs in osa_info.items():
                     for _, buff_info in buffs.items():
-                        init_value_str, is_zero_init = AutosarUtils.get_sr_var_init_value(
+                        init_value_str, is_zero_init, is_bool = AutosarUtils.get_sr_var_init_value(
                             buff_info["datatype"], buff_info["init_value"]
                         )
                         buff_info["init_category"] = (
@@ -4569,7 +4894,7 @@ class Function(FunctionBase):
     @staticmethod
     @pass_context
     def get_component_osapplication_name(context):
-        return context.get("swc", {}).get("osapplication", None)
+        return context.get("swc", {}).get("osapplication", "")
 
     @staticmethod
     def remove_duplicates_port_variables(port_list):
@@ -5111,10 +5436,7 @@ class Function(FunctionBase):
         if port["imp_sr_copy_buf_opt"]:
             return port["variable"]
         else:
-            return (
-                f'Rte_{port["task"]}.Rte_RB.Rte_{port["component"]}_{port["runnable"]}.'
-                f'Rte_{port["port_prototype"]}_{port["data_element"]}'
-            )
+            return f'Rte_{port["task"]}.Rte_RB.Rte_{port["component"]}_{port["runnable"]}.Rte_{port["port_prototype"]}_{port["data_element"]}'
 
     @staticmethod
     def get_swc_sr_implicit_intra_osa_opt_ports(ports):
@@ -5250,8 +5572,8 @@ class Function(FunctionBase):
                 if port.get("dm_macro_api", False) is True:
                     return _MACRO
                 return _FUNC
-            if port["arg"]["datatype"]["native_category"] != "NUMERICAL":
-                return _FUNC
+            # if port["arg"]["datatype"]["native_category"] != ["NUMERICAL", "ARRAY", "STRUCTURE"]:
+            #     return _FUNC
             if port.get("set_events", []) != []:
                 return _FUNC
             if port["lock"] != "NONE":
@@ -5268,7 +5590,7 @@ class Function(FunctionBase):
         multievent_tasks = set()
         for event in port["set_events"]:
             task_id = event["task_id"]
-            event_mask = event["event_mask"]
+            event_mask = event["event_mask"].upper()
             if task_id not in merged_events.keys():
                 merged_events[task_id] = {"task_id": task_id, "event_mask": event_mask}
                 continue

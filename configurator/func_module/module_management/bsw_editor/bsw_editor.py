@@ -1533,8 +1533,7 @@ class BswEditor:
 
     @classmethod
     def create_base_bswm_common_data_obj(cls, bsw_ecuc_dict, system_path):
-        dir_path = os.path.join(system_path, "studio_plug_in", "system_secondary", "mode_management", "bsw_management")
-        ecuconfig_file = os.path.abspath(os.path.join(dir_path, "base_common_data.arxml"))
+        ecuconfig_file = os.path.join(system_path, "system_secondary", "bsw_management", "base_common_data.arxml")
         ecuc_autosar = AutosarUtil.parse_arxml(ecuconfig_file)  # 加载base bswm ecuc，里面存在base bswm_common_data
         base_bswm_common_data = ecuc_autosar.find("/ActiveEcuC/BswM/BswMGeneral/BswMCommonData")
         ecuc_bswm_general_obj = bsw_ecuc_dict["BswM"].find("/ActiveEcuC/BswM/BswMGeneral")

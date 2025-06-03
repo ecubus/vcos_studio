@@ -113,12 +113,13 @@ def generate_c_code(
                     # 确保模块上一级添加进syspath，各个插件可能在不同的目录下
                     LoadPlugIn.append_sys_path(plugin_module_info[parser_module], parser_module)
                 module_pkg = LoadPlugIn.load_module(parser_module, "config_plug_in.generator.generator")
+                if module_pkg is None:
+                    logger.exception(f"{parser_module} does not support c code generation")
+                    continue
                 generate_dynamic_code = getattr(module_pkg, "generate_dynamic_code")
                 progress_signal.emit(f"Generating {parser_module} c code")
                 ret = generate_dynamic_code(sys_config, config_dict)
                 bsw_result_dict["bsw"].update({parser_module: {"result": ret}})
-        except ModuleNotFoundError:
-            logger.exception(f"{parser_module} does not support c code generation")
         except UndefinedError as e:
             error_info = None
             frame_info_list = inspect.trace()
@@ -136,26 +137,3 @@ def generate_c_code(
             logger.exception(f"{parser_module} codegen failed! {type(e)}")
             bsw_result_dict["bsw"].update({parser_module: {"result": False}})
     return bsw_result_dict
-
-
-def generate_config_json(sys_config: dict, config_dict: dict):
-    """
-    Generate json configuration file
-    Args:
-        sys_config (dict): System configuration items
-        config_dict (dict): config.json
-    """
-
-    for parser_module in sys_config["bsw_import_modules_list"]:
-        try:
-            kconfig_module_name = f"VCOS_MODULE_CONFIG_{parser_module.upper()}"
-            if (
-                kconfig_module_name in sys_config["modules"].keys()
-                and sys_config["modules"][kconfig_module_name] == "y"
-            ):
-                module_pkg = importlib.import_module(f"bsw.{parser_module.lower()}.generator")
-                module_pkg.generate_config_json(sys_config, config_dict["comm_diag"])
-            else:
-                logger.warning(f"{kconfig_module_name} is not enabled. VCOS Tools don't generate configuration")
-        except ModuleNotFoundError:
-            logger.warning(f"{parser_module} does not support {parser_module}_Cfg.json generation in this project")

@@ -48,7 +48,7 @@ class UILogger(Logger):
         super().init_default_handler(sink=None, log_path=log_path)  # type: ignore
         self.updated_signal.signal.connect(self.update_ui)
         self.ui_handler_id = self.add_handler(
-            sink=self.handler, level=LOGGER_LEVEL, format=DEFAULT_FORMAT, colorize=True, filter=self.log_filter
+            sink=self.handler, level=LOGGER_LEVEL, format=DEFAULT_FORMAT, colorize=True, filter=self.ui_log_filter
         )
 
     def registe_ui_obj(self, ui_obj):
@@ -88,27 +88,9 @@ class UILogger(Logger):
             if text_browser:
                 text_browser.clear()
 
-    def log_filter(self, record):
-        if "ui_log" not in record["extra"]:
-            return False
-        if record["extra"]["ui_log"]:
-            frame = sys._getframe(5)
-            try:
-                name = frame.f_globals["__name__"]
-            except KeyError:
-                name = None
-            code = frame.f_code
-            file_path = code.co_filename
-            file_name = basename(file_path)
-            record.update(
-                {
-                    "file": RecordFile(file_name, file_path),
-                    "function": code.co_name,
-                    "line": frame.f_lineno,
-                    "module": splitext(file_name)[0],
-                    "name": name,
-                }
-            )
+    def ui_log_filter(self, record):
+        if record["extra"].get("ui_log"):
+            self.update_record(record)
             return True
         else:
             return False

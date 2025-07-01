@@ -47,7 +47,7 @@
     {%- if sig_cm_info.get('category', None) == 'LINEAR' %}
 {{ind}}{{data_sig_type}} local_{{assigned}};
 {{ind}}local_{{assigned}} = ({{data_sig_type}})((float64)({{assign}}) * {{sig_cm_info['value']['coeff_final']}} + ({{sig_cm_info['value']['offset_final']}}));
-{{ind}}ret{{post}}= Com_SendSignal(ComConf_ComSignal_{{signal_name}}_Tx, &local_{{assigned}});
+{{ind}}ret{{post}}= com_send_signal(ComConf_ComSignal_{{signal_name}}_Tx, &local_{{assigned}});
     {%- elif sig_cm_info.get('category', None) in ['SCALE_LINEAR', 'SCALE_LINEAR_AND_TEXTTABLE'] %}
 {{ind}}{{data_sig_type}} local_{{assigned}};
 {{ind}}switch ((sint64)({{assign}}))
@@ -64,9 +64,9 @@
 {{ind}}}
             {%- endif %}
         {%- endfor %}
-{{ind}}ret{{post}}= Com_SendSignal(ComConf_ComSignal_{{signal_name}}_Tx, &local_{{assigned}});
+{{ind}}ret{{post}}= com_send_signal(ComConf_ComSignal_{{signal_name}}_Tx, &local_{{assigned}});
     {%- else %}
-{{ind}}ret{{post}}= Com_SendSignal(ComConf_ComSignal_{{signal_name}}_Tx, &{{assign}});
+{{ind}}ret{{post}}= com_send_signal(ComConf_ComSignal_{{signal_name}}_Tx, &{{assign}});
     {%- endif %}
 {%- endmacro %}
 
@@ -116,7 +116,7 @@
     {%- if sig_cm_info.get('category', None) == 'LINEAR' %}
 {{ind}}{{data_sig_type}} Local_{{ire}};
 {{ind}}Local_{{ire}} = ({{data_sig_type}})((float64)({{input_buff}}->{{ire}}) * {{sig_cm_info['value']['coeff_final']}} + ({{sig_cm_info['value']['offset_final']}}));
-{{ind}}ret{{post}}= Com_SendSignal(ComConf_ComGroupSignal_{{i_signal}}_Tx, &(Local_{{ire}}));
+{{ind}}ret{{post}}= com_send_signal(ComConf_ComGroupSignal_{{i_signal}}_Tx, &(Local_{{ire}}));
     {%- elif sig_cm_info.get('category', None) in ['SCALE_LINEAR', 'SCALE_LINEAR_AND_TEXTTABLE'] %}
 {{ind}}{{data_sig_type}} Local_{{ire}};
 {{ind}}switch ((sint64)({{input_buff}}->{{ire}}))
@@ -133,9 +133,9 @@
 {{ind}}}
             {%- endif %}
         {%- endfor %}
-{{ind}}ret{{post}}= Com_SendSignal(ComConf_ComGroupSignal_{{i_signal}}_Tx, &(Local_{{ire}}));
+{{ind}}ret{{post}}= com_send_signal(ComConf_ComGroupSignal_{{i_signal}}_Tx, &(Local_{{ire}}));
     {%- else %}
-{{ind}}ret{{post}}= Com_SendSignal(ComConf_ComGroupSignal_{{i_signal}}_Tx, &({{input_buff}}->{{ire}}));
+{{ind}}ret{{post}}= com_send_signal(ComConf_ComGroupSignal_{{i_signal}}_Tx, &({{input_buff}}->{{ire}}));
     {%- endif %}
 {%- endmacro %}
 
@@ -163,7 +163,7 @@
                 {%- endif %}
             {%- endfor %}
         {%- else %}
-{{ind}}ret = Com_SendSignal(ComConf_ComSignal_{{signal_name}}_Tx, {{and_op}}{{input_buff}});
+{{ind}}ret = com_send_signal(ComConf_ComSignal_{{signal_name}}_Tx, {{and_op}}{{input_buff}});
         {%- endif %}
 {{ind}}if (ret != E_OK)
 {{ind}}{
@@ -177,7 +177,7 @@
                 {%- endif %}
             {%- endfor %}
         {%- else %}
-{{ind}}ret_dlog = Com_SendSignal(ComConf_ComSignal_{{signal_name}}_Tx, {{and_op}}{{input_buff}});
+{{ind}}ret_dlog = com_send_signal(ComConf_ComSignal_{{signal_name}}_Tx, {{and_op}}{{input_buff}});
         {%- endif %}
 {{ind}}if (ret_dlog != E_OK)
 {{ind}}{
@@ -196,7 +196,7 @@
                 {%- endif %}
             {%- endfor %}
         {%- else %}
-{{ind}}ret = Com_SendSignal(ComConf_ComSignal_{{signal_name}}_Tx, {{and_op}}{{input_buff}});
+{{ind}}ret = com_send_signal(ComConf_ComSignal_{{signal_name}}_Tx, {{and_op}}{{input_buff}});
         {%- endif %}
     {%- else %}
         {%- if gen_compu_method and port["arg"]["datatype"]["native_category"] == "NUMERICAL" %}
@@ -206,7 +206,7 @@
                 {%- endif %}
             {%- endfor %}
         {%- else %}
-{{ind}}ret |= Com_SendSignal(ComConf_ComSignal_{{signal_name}}_Tx, {{and_op}}{{input_buff}});
+{{ind}}ret |= com_send_signal(ComConf_ComSignal_{{signal_name}}_Tx, {{and_op}}{{input_buff}});
         {%- endif %}
     {%- endif %}
 {%- endfor %}
@@ -223,7 +223,7 @@
                 {%- if gen_compu_method %}
 {{-gen_tx_signal_group_dm_compu_method(input_buff, ind, " ", type_mapping["implementation_record_element"], type_mapping["i_signal"], type_mapping["real_sig_type"], type_mapping["compu_method"])}}
                 {%- else %}
-{{ind}}ret = Com_SendSignal(ComConf_ComGroupSignal_{{type_mapping["i_signal"]}}_Tx, &({{input_buff}}->{{type_mapping["implementation_record_element"]}}));
+{{ind}}ret = com_send_signal(ComConf_ComGroupSignal_{{type_mapping["i_signal"]}}_Tx, &({{input_buff}}->{{type_mapping["implementation_record_element"]}}));
                 {%- endif %}
 {{ind}}if (ret != E_OK)
 {{ind}}{
@@ -233,7 +233,7 @@
                 {%- if gen_compu_method %}
 {{-gen_tx_signal_group_dm_compu_method(input_buff, ind, "_dlog ", type_mapping["implementation_record_element"], type_mapping["i_signal"], type_mapping["real_sig_type"], type_mapping["compu_method"])}}
                 {%- else %}
-{{ind}}ret_dlog = Com_SendSignal(ComConf_ComGroupSignal_{{type_mapping["i_signal"]}}_Tx, &({{input_buff}}->{{type_mapping["implementation_record_element"]}}));
+{{ind}}ret_dlog = com_send_signal(ComConf_ComGroupSignal_{{type_mapping["i_signal"]}}_Tx, &({{input_buff}}->{{type_mapping["implementation_record_element"]}}));
                 {%- endif %}
 {{ind}}if (ret_dlog != E_OK)
 {{ind}}{
@@ -247,7 +247,7 @@
             {%- if gen_compu_method %}
 {{-gen_tx_signal_group_dm_compu_method(input_buff, ind, "_dlog ", type_mapping["implementation_record_element"], type_mapping["i_signal"], type_mapping["real_sig_type"], type_mapping["compu_method"])}}
             {%- else %}
-{{ind}}ret_dlog = Com_SendSignal(ComConf_ComGroupSignal_{{type_mapping["i_signal"]}}_Tx, &({{input_buff}}->{{type_mapping["implementation_record_element"]}}));
+{{ind}}ret_dlog = com_send_signal(ComConf_ComGroupSignal_{{type_mapping["i_signal"]}}_Tx, &({{input_buff}}->{{type_mapping["implementation_record_element"]}}));
             {%- endif %}
 {{ind}}if (ret_dlog != E_OK)
 {{ind}}{
@@ -256,7 +256,7 @@
 {{ind}}ret |= ret_dlog;
         {%- endfor %}
     {%- endif %}
-{{ind}}ret_dlog = Com_SendSignalGroup(ComConf_ComSignalGroup_{{sg_name}}_Tx);
+{{ind}}ret_dlog = com_send_signal_group(ComConf_ComSignalGroup_{{sg_name}}_Tx);
 {{ind}}if (ret_dlog != E_OK)
 {{ind}}{
 {{ind}}    Rte_LogCom({{rte_com_service_id}}, {{rte_com_api_id}}, RTE_COM_SENDSIGNALGROUP_ID, ComConf_ComSignalGroup_{{sg_name}}_Tx, ret);
@@ -271,13 +271,13 @@
                 {%- if gen_compu_method %}
 {{-gen_tx_signal_group_dm_compu_method(input_buff, ind, " ", type_mapping["implementation_record_element"], type_mapping["i_signal"], type_mapping["real_sig_type"], type_mapping["compu_method"])}}
                 {%- else %}
-{{ind}}ret = Com_SendSignal(ComConf_ComGroupSignal_{{type_mapping["i_signal"]}}_Tx, &({{input_buff}}->{{type_mapping["implementation_record_element"]}}));
+{{ind}}ret = com_send_signal(ComConf_ComGroupSignal_{{type_mapping["i_signal"]}}_Tx, &({{input_buff}}->{{type_mapping["implementation_record_element"]}}));
                 {%- endif %}
             {%- else %}
                 {%- if gen_compu_method %}
 {{-gen_tx_signal_group_dm_compu_method(input_buff, ind, " |", type_mapping["implementation_record_element"], type_mapping["i_signal"], type_mapping["real_sig_type"], type_mapping["compu_method"])}}
                 {%- else %}
-{{ind}}ret |= Com_SendSignal(ComConf_ComGroupSignal_{{type_mapping["i_signal"]}}_Tx, &({{input_buff}}->{{type_mapping["implementation_record_element"]}}));
+{{ind}}ret |= com_send_signal(ComConf_ComGroupSignal_{{type_mapping["i_signal"]}}_Tx, &({{input_buff}}->{{type_mapping["implementation_record_element"]}}));
                 {%- endif %}
             {%- endif %}
         {%- endfor %}
@@ -286,11 +286,11 @@
             {%- if gen_compu_method %}
 {{-gen_tx_signal_group_dm_compu_method(input_buff, ind, " |", type_mapping["implementation_record_element"], type_mapping["i_signal"], type_mapping["real_sig_type"], type_mapping["compu_method"])}}
             {%- else %}
-{{ind}}ret |= Com_SendSignal(ComConf_ComGroupSignal_{{type_mapping["i_signal"]}}_Tx, &({{input_buff}}->{{type_mapping["implementation_record_element"]}}));
+{{ind}}ret |= com_send_signal(ComConf_ComGroupSignal_{{type_mapping["i_signal"]}}_Tx, &({{input_buff}}->{{type_mapping["implementation_record_element"]}}));
             {%- endif %}
         {%- endfor %}
     {%- endif %}
-{{ind}}ret |= Com_SendSignalGroup(ComConf_ComSignalGroup_{{sg_name}}_Tx);
+{{ind}}ret |= com_send_signal_group(ComConf_ComSignalGroup_{{sg_name}}_Tx);
 {%- endfor %}
 #endif
 {%- endmacro %}
@@ -405,10 +405,10 @@
     {#- directly receive from COM #}
     {%- set signal_name = rport.get("mapping_to_signals", [])[0] %}
     {%- if rport.get("signal_category", None) == "SignalGroup" %}
-{{ind}}ret |= Com_ReceiveSignalGroup(ComConf_ComSignalGroup_{{signal_name}}_Rx);
+{{ind}}ret |= com_receive_signal_group(ComConf_ComSignalGroup_{{signal_name}}_Rx);
         {%- set type_mappings = rport["type_mappings"].get(signal_name)%}
         {%- for type_mapping in type_mappings %}
-{{ind}}ret |= Com_ReceiveSignal(ComConf_ComGroupSignal_{{type_mapping["i_signal"]}}_Rx, &({{out_buff_addr}}->{{type_mapping["implementation_record_element"]}}));
+{{ind}}ret |= com_receive_signal(ComConf_ComGroupSignal_{{type_mapping["i_signal"]}}_Rx, &({{out_buff_addr}}->{{type_mapping["implementation_record_element"]}}));
             {%- if gen_compu_method %}
 {{-gen_rx_signal_group_dm_compu_method(ind, out_buff_addr, type_mapping["implementation_record_element"], type_mapping["datatype"], type_mapping['compu_method'])}}
             {%- endif %}
@@ -420,7 +420,7 @@
 {{ind}}}
 #endif
     {%- else %}
-{{ind}}ret |= Com_ReceiveSignal(ComConf_ComSignal_{{signal_name}}_Rx, {{out_buff_addr}});
+{{ind}}ret |= com_receive_signal(ComConf_ComSignal_{{signal_name}}_Rx, {{out_buff_addr}});
         {%- if gen_compu_method and datatype["native_category"] == "NUMERICAL" %}
 {{-gen_rx_num_sig_dm_compu_method(ind, out_buff_addr, out_buff_addr, datatype['basetype'], signal_infos[0]['compu_method'])}}
         {%- endif %}
@@ -457,6 +457,9 @@
 #include "Rte_Main.h"
 #include "task_cfg.h"
 #include "event_cfg.h"
+#include "spinlock_cfg.h"
+#include "schedtable_cfg.h"
+
 {%- set swcs = get_appl_swc_name_list() %}
 {%- for swc in swcs %}
 #include "Rte_{{swc}}.h"
@@ -477,10 +480,7 @@
 {%- if wdgm_configured_in_isolate() and task_alive_configured_in_curr_appl() %}
 #include "wdgm_ppcfunction.h"
 {%- endif %}
-#ifdef VAR
-#undef VAR
-#endif
-#define VAR(vartype, memclass) vartype
+
 {%- set core_id = get_appl_core_id(appl_name) %}
 {%- set is_privileged = get_appl_is_privileged(appl_name) %}
 {%- set isr_simplified = get_rte_generation_isr_simplified() %}
@@ -504,10 +504,12 @@
 #define Rte_DisableOSInterruptsOS()  SuspendOSInterrupts()
 #define Rte_EnableOSInterruptsOS()   ResumeOSInterrupts()
 
-#define RTE_TASK_TIMEOUT_EVENT_MASK   EVENT_MASK_BIT_0
-#define RTE_TASK_WAITPOINT_EVENT_MASK EVENT_MASK_BIT_1
+#define RTE_TASK_TIMEOUT_EVENT_MASK   (1u)
+#define RTE_TASK_WAITPOINT_EVENT_MASK (1u << 1)
 
-#define RTE_MSEC_TO_TICKS(time_ms, seconds_per_tick) ((uint32) ((((float32) time_ms) / (((float32) seconds_per_tick) * 1000.0F)) + 0.5F))
+#define RTE_MSEC_TO_TICKS(time_ms) ((uint32) ((((float32) time_ms) / (((float32) {{get_seconds_per_tick(appl_name)}}) * 1000.0F)) + 0.5F))
+#define RTE_START_SCH_TBL_OFFSET (1U)
+
 
 {#- SR defin dm compu method #}
 {%- set compu_method_list = get_com_signal_compu_method_list(appl_name) %}
@@ -619,30 +621,30 @@ VAR({{datatype['name']}}, {{appl_prefix}}{{appl_name_or_core_id}}_{{appl_postfix
  * Buffer extern for intra-osa S/R Non-Queue
 */
 {#- non-zero init value#}
-#define RTE_START_SEC_PRIVATE_{{appl_name.upper()}}_VAR_INIT_UNSPECIFIED
+#define RTE_START_SEC_{{appl_name.upper()}}_PRIVATE_DATA
 #include "rte_memmap.h"
     {%- if nonzero_boolean_vars %}
-extern VAR(Rte_Private_{{appl_name}}_NonZeroBool_VarType, RTE_PRIVATE_{{appl_name.upper()}}_VAR_INIT) Rte_Private_{{appl_name}}_NonZeroBool_Vars;
+extern VAR(Rte_Private_{{appl_name}}_NonZeroBool_VarType, RTE_{{appl_name.upper()}}_PRIVATE_DATA) Rte_Private_{{appl_name}}_NonZeroBool_Vars;
     {%- endif %}
 {%- if buffers %}
     {%- for buffer in buffers[appl_name].values() %}
-    {{-sr_init_value_non_zero("RTE_PRIVATE_", appl_name.upper(), "VAR_INIT", buffer, "TRUE")}}
+    {{-sr_init_value_non_zero("RTE_", appl_name.upper(), "PRIVATE_DATA", buffer, "TRUE")}}
     {%- endfor %}
 {%- endif %}
-#define RTE_STOP_SEC_PRIVATE_{{appl_name.upper()}}_VAR_INIT_UNSPECIFIED
+#define RTE_STOP_SEC_{{appl_name.upper()}}_PRIVATE_DATA
 #include "rte_memmap.h"
 {#- zero init value #}
-#define RTE_START_SEC_PRIVATE_{{appl_name.upper()}}_VAR_ZERO_INIT_UNSPECIFIED
+#define RTE_START_SEC_{{appl_name.upper()}}_PRIVATE_BSS
 #include "rte_memmap.h"
     {%- if zero_boolean_vars %}
-extern VAR(Rte_Private_{{appl_name}}_ZeroBool_VarType, RTE_PRIVATE_{{appl_name.upper()}}_VAR_ZERO_INIT) Rte_Private_{{appl_name}}_ZeroBool_Vars;
+extern VAR(Rte_Private_{{appl_name}}_ZeroBool_VarType, RTE_{{appl_name.upper()}}_PRIVATE_BSS) Rte_Private_{{appl_name}}_ZeroBool_Vars;
     {%- endif %}
     {%- if buffers %}
         {%- for buffer in buffers[appl_name].values() %}
-    {{-sr_init_value_zero("RTE_PRIVATE_", appl_name.upper(), "VAR_ZERO_INIT", buffer, "TRUE")}}
+{{-sr_init_value_zero("RTE_", appl_name.upper(), "PRIVATE_BSS", buffer, "TRUE")}}
         {%- endfor %}
     {%- endif %}
-#define RTE_STOP_SEC_PRIVATE_{{appl_name.upper()}}_VAR_ZERO_INIT_UNSPECIFIED
+#define RTE_STOP_SEC_{{appl_name.upper()}}_PRIVATE_BSS
 #include "rte_memmap.h"
 {%- endif %}
 
@@ -650,12 +652,12 @@ extern VAR(Rte_Private_{{appl_name}}_ZeroBool_VarType, RTE_PRIVATE_{{appl_name.u
 {%- set buffers = get_appl_sr_implicit_copy_buffer_list(appl_name) %}
 {%- if buffers %}
 {# blank line #}
-#define RTE_START_SEC_PRIVATE_{{appl_name.upper()}}_VAR_ZERO_INIT_UNSPECIFIED
+#define RTE_START_SEC_{{appl_name.upper()}}_PRIVATE_DATA
 #include "rte_memmap.h"
     {%- for task in buffers %}
-extern VAR(Rte_ts_{{task}}, RTE_PRIVATE_{{appl_name.upper()}}_VAR_ZERO_INIT) Rte_{{task}};
+extern VAR(Rte_ts_{{task}}, RTE_{{appl_name.upper()}}_PRIVATE_DATA) Rte_{{task}};
     {%- endfor%}
-#define RTE_STOP_SEC_PRIVATE_{{appl_name.upper()}}_VAR_ZERO_INIT_UNSPECIFIED
+#define RTE_STOP_SEC_{{appl_name.upper()}}_PRIVATE_DATA
 #include "rte_memmap.h"
 {%- endif %}
 
@@ -666,12 +668,12 @@ extern VAR(Rte_ts_{{task}}, RTE_PRIVATE_{{appl_name.upper()}}_VAR_ZERO_INIT) Rte
 /*
  * Update flags extern for intra-osa S/R Receiver with enableUpdate == True
 */
-#define RTE_START_SEC_PRIVATE_{{appl_name.upper()}}_VAR_ZERO_INIT_UNSPECIFIED
+#define RTE_START_SEC_{{appl_name.upper()}}_PRIVATE_DATA
 #include "rte_memmap.h"
     {%- for flag in update_flags[appl_name] %}
-extern VAR(uint8, RTE_PRIVATE_{{appl_name.upper()}}_VAR_ZERO_INIT) {{flag['flag_name']}};
+extern VAR(uint8, RTE_{{appl_name.upper()}}_PRIVATE_DATA) {{flag['flag_name']}};
     {%- endfor %}
-#define RTE_STOP_SEC_PRIVATE_{{appl_name.upper()}}_VAR_ZERO_INIT_UNSPECIFIED
+#define RTE_STOP_SEC_{{appl_name.upper()}}_PRIVATE_DATA
 #include "rte_memmap.h"
 {%- endif%}
 
@@ -691,12 +693,12 @@ static FUNC(void, RTE_CODE) Rte_DeActivateModeDisabling_{{pport["osapplication"]
 {%- set task_list = get_cur_appl_basic_task_with_st_list() %}
 {%- if task_list %}
 {# blank line #}
-#define RTE_START_SEC_PRIVATE_{{appl_name.upper()}}_VAR_ZERO_INIT_UNSPECIFIED
+#define RTE_START_SEC_{{appl_name.upper()}}_PRIVATE_DATA
 #include "rte_memmap.h"
     {%- for task_info in task_list %}
-extern VAR(uint32, RTE_PRIVATE_{{appl_name.upper()}}_VAR_ZERO_INIT) Rte_ScheduleTable_{{task_info["task_name"]}}_Step;
+extern VAR(uint32, RTE_{{appl_name.upper()}}_PRIVATE_DATA) Rte_ScheduleTable_{{task_info["task_name"]}}_Step;
     {%- endfor%}
-#define RTE_STOP_SEC_PRIVATE_{{appl_name.upper()}}_VAR_ZERO_INIT_UNSPECIFIED
+#define RTE_STOP_SEC_{{appl_name.upper()}}_PRIVATE_DATA
 #include "rte_memmap.h"
 {%- endif %}
 
@@ -705,15 +707,15 @@ extern VAR(uint32, RTE_PRIVATE_{{appl_name.upper()}}_VAR_ZERO_INIT) Rte_Schedule
 {%- set appl_cs_multicore_r_ports = get_appl_cs_multicore_rports(appl_name) %}
 {%- if appl_cs_multicore_p_ports or appl_cs_multicore_r_ports %}
 {# blank line #}
-#define RTE_START_SEC_SHARED_{{appl_name.upper()}}_VAR_ZERO_INIT_UNSPECIFIED
+#define RTE_START_SEC_{{appl_name.upper()}}_SEMISHARED_BSS
 #include "rte_memmap.h"
 
 {%- for pport in appl_cs_multicore_p_ports %}
     {%- set client_rports = pport["connected_ports"]["ports"] %}
     {%- for rport in client_rports %}
         {%- if rport["ioc"] %}
-VAR(boolean, RTE_SHARED_{{appl_name.upper()}}_VAR_ZERO_INIT) Rte_CS_Flag_{{pport["component"]}}_{{pport["name"]}}_{{rport["client_id"]}}_CallCompleted_Server;
-VAR(Std_ReturnType, RTE_SHARED_{{appl_name.upper()}}_VAR_ZERO_INIT) Rte_CS_Result_{{pport["component"]}}_{{pport["name"]}}_{{rport["client_id"]}};
+VAR(boolean, RTE_{{appl_name.upper()}}_SEMISHARED_BSS) Rte_CS_Flag_{{pport["component"]}}_{{pport["name"]}}_{{rport["client_id"]}}_CallCompleted_Server;
+VAR(Std_ReturnType, RTE_{{appl_name.upper()}}_SEMISHARED_BSS) Rte_CS_Result_{{pport["component"]}}_{{pport["name"]}}_{{rport["client_id"]}};
         {%- endif %}
     {%- endfor %}
 {%- endfor %}
@@ -722,24 +724,24 @@ VAR(Std_ReturnType, RTE_SHARED_{{appl_name.upper()}}_VAR_ZERO_INIT) Rte_CS_Resul
 {%- for rport in appl_cs_multicore_r_ports %}
     {%- if rport["ioc"] %}
         {%- set pport = rport["connected_ports"]["ports"][0] %}
-VAR(boolean, RTE_SHARED_{{appl_name.upper()}}_VAR_ZERO_INIT) Rte_CS_Flag_{{pport["component"]}}_{{pport["name"]}}_{{rport["client_id"]}}_CallCompleted_Client;
+VAR(boolean, RTE_{{appl_name.upper()}}_SEMISHARED_BSS) Rte_CS_Flag_{{pport["component"]}}_{{pport["name"]}}_{{rport["client_id"]}}_CallCompleted_Client;
     {%- endif %}
 {%- endfor %}
 
-#define RTE_STOP_SEC_SHARED_{{appl_name.upper()}}_VAR_ZERO_INIT_UNSPECIFIED
+#define RTE_STOP_SEC_{{appl_name.upper()}}_SEMISHARED_BSS
 #include "rte_memmap.h"
 {# blank line #}
 
 {#- ---------------------------------------------------------------- #}
 {#- cs arguments #}
 {#- ---------------------------------------------------------------- #}
-#define RTE_START_SEC_SHARED_{{appl_name.upper()}}_VAR_NO_INIT_UNSPECIFIED
+#define RTE_START_SEC_{{appl_name.upper()}}_SEMISHARED_BSS
 #include "rte_memmap.h"
 {%- for rport in appl_cs_multicore_r_ports %}
     {%- set pport = rport["connected_ports"]["ports"][0] %}
     {%- for arg in rport["operation"]["args"].values() %}
         {%- if arg["direction"] == "IN" %}
-VAR({{arg["type"]}}, RTE_SHARED_{{appl_name.upper()}}_VAR_NO_INIT) Rte_CS_Arg_{{pport["component"]}}_{{pport["name"]}}_{{rport["client_id"]}}_{{arg["name"]}};
+VAR({{arg["type"]}}, RTE_{{appl_name.upper()}}_SEMISHARED_BSS) Rte_CS_Arg_{{pport["component"]}}_{{pport["name"]}}_{{rport["client_id"]}}_{{arg["name"]}};
         {%- endif %}
     {%- endfor %}
 {%- endfor %}
@@ -750,13 +752,13 @@ VAR({{arg["type"]}}, RTE_SHARED_{{appl_name.upper()}}_VAR_NO_INIT) Rte_CS_Arg_{{
     {%- for rport in client_rports %}
         {%- for arg in pport["operation"]["args"].values() %}
             {%- if arg["direction"] == "OUT" %}
-VAR({{arg["type"]}}, RTE_SHARED_{{appl_name.upper()}}_VAR_NO_INIT) Rte_CS_Arg_{{pport["component"]}}_{{pport["name"]}}_{{rport["client_id"]}}_{{arg["name"]}};
+VAR({{arg["type"]}}, RTE_{{appl_name.upper()}}_SEMISHARED_BSS) Rte_CS_Arg_{{pport["component"]}}_{{pport["name"]}}_{{rport["client_id"]}}_{{arg["name"]}};
             {%- endif %}
         {%- endfor %}
     {%- endfor %}
 {%- endfor %}
 {# blank line #}
-#define RTE_STOP_SEC_SHARED_{{appl_name.upper()}}_VAR_NO_INIT_UNSPECIFIED
+#define RTE_STOP_SEC_{{appl_name.upper()}}_SEMISHARED_BSS
 #include "rte_memmap.h"
 {%- endif %} {#- {%- if appl_cs_multicore_p_ports or appl_cs_multicore_r_ports %} #}
 
@@ -766,19 +768,19 @@ VAR({{arg["type"]}}, RTE_SHARED_{{appl_name.upper()}}_VAR_NO_INIT) Rte_CS_Arg_{{
         {%- set client_rports = pport["connected_ports"]["ports"] %}
         {%- for rport in client_rports %}
             {%- for arg in pport["operation"]["args"].values() %}
-                {%- if arg["direction"] == "INOUT" and rport['infix']['mem_arg_inout'] == 'GLOBAL_VAR'%}
+                {%- if arg["direction"] == "INOUT" and rport['infix']['mem_arg_inout'] == 'MULTI_APP'%}
                 {%- set ns.counter = ns.counter + 1 %}
                     {%- if ns.counter == 1 %}
-#define RTE_START_SEC_GLOBAL_VAR_NO_INIT_UNSPECIFIED
+#define RTE_START_SEC_MULTI_APP_BSS
 #include "rte_memmap.h"
                     {%- endif %}
-VAR({{arg["type"]}}, RTE_{{rport['infix']['mem_arg_inout'].upper()}}_NO_INIT) Rte_CS_Arg_{{pport["component"]}}_{{pport["name"]}}_{{rport["client_id"]}}_{{arg["name"]}};
+VAR({{arg["type"]}}, RTE_MULTI_APP_BSS) Rte_CS_Arg_{{pport["component"]}}_{{pport["name"]}}_{{rport["client_id"]}}_{{arg["name"]}};
                 {%- endif %}
             {%- endfor %}
         {%- endfor %}
     {%- endfor %}
     {%- if ns.counter > 0 %}
-#define RTE_STOP_SEC_GLOBAL_VAR_NO_INIT_UNSPECIFIED
+#define RTE_STOP_SEC_MULTI_APP_BSS
 #include "rte_memmap.h"
     {%- endif %}
 {%- endif %}
@@ -787,46 +789,22 @@ VAR({{arg["type"]}}, RTE_{{rport['infix']['mem_arg_inout'].upper()}}_NO_INIT) Rt
 {%- set ns = namespace(counter=0) %}
     {%- for pport in appl_cs_multicore_p_ports %}
         {%- set client_rports = pport["connected_ports"]["ports"] %}
-        {%- set infix = 'SHARED_CORE' + core_id + '_VAR' %}
+        {%- set infix = appl_name + '_PRIVATE' %}
         {%- for rport in client_rports %}
             {%- for arg in pport["operation"]["args"].values() %}
                 {%- if arg["direction"] == "INOUT" and rport['infix']['mem_arg_inout'] == infix %}
                 {%- set ns.counter = ns.counter + 1 %}
                     {%- if ns.counter == 1 %}
-#define RTE_START_SEC_SHARED_CORE{{core_id}}_VAR_NO_INIT_UNSPECIFIED
+#define RTE_START_SEC_{{appl_name.upper()}}_PRIVATE_BSS
 #include "rte_memmap.h"
                     {%- endif %}
-VAR({{arg["type"]}}, RTE_{{rport['infix']['mem_arg_inout'].upper()}}_NO_INIT) Rte_CS_Arg_{{pport["component"]}}_{{pport["name"]}}_{{rport["client_id"]}}_{{arg["name"]}};
+VAR({{arg["type"]}}, RTE_{{appl_name.upper()}}_PRIVATE_BSS) Rte_CS_Arg_{{pport["component"]}}_{{pport["name"]}}_{{rport["client_id"]}}_{{arg["name"]}};
                 {%- endif %}
             {%- endfor %}
         {%- endfor %}
     {%- endfor %}
     {%- if ns.counter > 0 %}
-#define RTE_STOP_SEC_SHARED_CORE{{core_id}}_VAR_NO_INIT_UNSPECIFIED
-#include "rte_memmap.h"
-    {%- endif %}
-{%- endif %}
-
-{%- if appl_cs_multicore_p_ports %}
-{%- set ns = namespace(counter=0) %}
-    {%- for pport in appl_cs_multicore_p_ports %}
-        {%- set client_rports = pport["connected_ports"]["ports"] %}
-        {%- set infix = 'PRIVATE_' + appl_name + '_VAR' %}
-        {%- for rport in client_rports %}
-            {%- for arg in pport["operation"]["args"].values() %}
-                {%- if arg["direction"] == "INOUT" and rport['infix']['mem_arg_inout'] == infix %}
-                {%- set ns.counter = ns.counter + 1 %}
-                    {%- if ns.counter == 1 %}
-#define RTE_START_SEC_PRIVATE_{{appl_name.upper()}}_VAR_NO_INIT_UNSPECIFIED
-#include "rte_memmap.h"
-                    {%- endif %}
-VAR({{arg["type"]}}, RTE_{{rport['infix']['mem_arg_inout'].upper()}}_NO_INIT) Rte_CS_Arg_{{pport["component"]}}_{{pport["name"]}}_{{rport["client_id"]}}_{{arg["name"]}};
-                {%- endif %}
-            {%- endfor %}
-        {%- endfor %}
-    {%- endfor %}
-    {%- if ns.counter > 0 %}
-#define RTE_STOP_SEC_PRIVATE_{{appl_name.upper()}}_VAR_NO_INIT_UNSPECIFIED
+#define RTE_STOP_SEC_{{appl_name.upper()}}_PRIVATE_BSS
 #include "rte_memmap.h"
     {%- endif %}
 {%- endif %}
@@ -836,25 +814,25 @@ VAR({{arg["type"]}}, RTE_{{rport['infix']['mem_arg_inout'].upper()}}_NO_INIT) Rt
 {%- if appl_queues %}
 {# blank line #}
     {%- set queues = appl_queues[appl_name] %}
-#define RTE_START_SEC_PRIVATE_{{appl_name.upper()}}_VAR_NO_INIT_UNSPECIFIED
+#define RTE_START_SEC_{{appl_name.upper()}}_PRIVATE_BSS
 #include "rte_memmap.h"
     {%- for queue in queues %}
-extern VAR({{queue['datatype']['name']}}, RTE_PRIVATE_{{appl_name.upper()}}_VAR_NO_INIT) Rte_Q_{{queue['name']}}[{{queue['size']}}];
+extern VAR({{queue['datatype']['name']}}, RTE_{{appl_name.upper()}}_PRIVATE_BSS) Rte_Q_{{queue['name']}}[{{queue['size']}}];
     {%- endfor %}
-extern VAR(Rte_QRamInfoType, RTE_PRIVATE_{{appl_name.upper()}}_VAR_NO_INIT) Rte_{{appl_name}}_QRamInfo[{{queues|length}}];
-#define RTE_STOP_SEC_PRIVATE_{{appl_name.upper()}}_VAR_NO_INIT_UNSPECIFIED
+extern VAR(Rte_QRamInfoType, RTE_{{appl_name.upper()}}_PRIVATE_BSS) Rte_{{appl_name}}_QRamInfo[{{queues|length}}];
+#define RTE_STOP_SEC_{{appl_name.upper()}}_PRIVATE_BSS
 #include "rte_memmap.h"
 
-#define RTE_START_SEC_PRIVATE_{{appl_name.upper()}}_VAR_ZERO_INIT_UNSPECIFIED
+#define RTE_START_SEC_{{appl_name.upper()}}_PRIVATE_BSS
 #include "rte_memmap.h"
-extern VAR(Rte_QOverflowType_{{appl_name}}, RTE_PRIVATE_{{appl_name.upper()}}_VAR_ZERO_INIT) Rte_QOverflow_{{appl_name}};
-#define RTE_STOP_SEC_PRIVATE_{{appl_name.upper()}}_VAR_ZERO_INIT_UNSPECIFIED
+extern VAR(Rte_QOverflowType_{{appl_name}}, RTE_{{appl_name.upper()}}_PRIVATE_BSS) Rte_QOverflow_{{appl_name}};
+#define RTE_STOP_SEC_{{appl_name.upper()}}_PRIVATE_BSS
 #include "rte_memmap.h"
 
-#define RTE_START_SEC_CONST_UNSPECIFIED
+#define RTE_START_SEC_CONST
 #include "rte_memmap.h"
 extern CONST(Rte_QRomInfoType, RTE_CONST) Rte_{{appl_name}}_QRomInfo[{{queues|length}}];
-#define RTE_STOP_SEC_CONST_UNSPECIFIED
+#define RTE_STOP_SEC_CONST
 #include "rte_memmap.h"
 
 /*
@@ -873,22 +851,22 @@ typedef uint8 Rte_QIndexType;
         {%- set index.value = index.value + 1 %}
     {%- endfor %}
 
-#define RTE_START_SEC_PRIVATE_{{appl_name.upper()}}_VAR_NO_INIT_UNSPECIFIED
+#define RTE_START_SEC_{{appl_name.upper()}}_PRIVATE_BSS
 #include "rte_memmap.h"
     {%- for queue in queues %}
-VAR({{queue['datatype']['name']}}, RTE_PRIVATE_{{appl_name.upper()}}_VAR_NO_INIT) Rte_Q_{{queue['name']}}[{{queue['size']}}];
+VAR({{queue['datatype']['name']}}, RTE_{{appl_name.upper()}}_PRIVATE_BSS) Rte_Q_{{queue['name']}}[{{queue['size']}}];
     {%- endfor %}
-VAR(Rte_QRamInfoType, RTE_PRIVATE_{{appl_name.upper()}}_VAR_NO_INIT) Rte_{{appl_name}}_QRamInfo[{{queues|length}}];
-#define RTE_STOP_SEC_PRIVATE_{{appl_name.upper()}}_VAR_NO_INIT_UNSPECIFIED
+VAR(Rte_QRamInfoType, RTE_{{appl_name.upper()}}_PRIVATE_BSS) Rte_{{appl_name}}_QRamInfo[{{queues|length}}];
+#define RTE_STOP_SEC_{{appl_name.upper()}}_PRIVATE_BSS
 #include "rte_memmap.h"
 
-#define RTE_START_SEC_PRIVATE_{{appl_name.upper()}}_VAR_ZERO_INIT_UNSPECIFIED
+#define RTE_START_SEC_{{appl_name.upper()}}_PRIVATE_BSS
 #include "rte_memmap.h"
-VAR(Rte_QOverflowType_{{appl_name}}, RTE_PRIVATE_{{appl_name.upper()}}_VAR_ZERO_INIT) Rte_QOverflow_{{appl_name}};
-#define RTE_STOP_SEC_PRIVATE_{{appl_name.upper()}}_VAR_ZERO_INIT_UNSPECIFIED
+VAR(Rte_QOverflowType_{{appl_name}}, RTE_{{appl_name.upper()}}_PRIVATE_BSS) Rte_QOverflow_{{appl_name}};
+#define RTE_STOP_SEC_{{appl_name.upper()}}_PRIVATE_BSS
 #include "rte_memmap.h"
 
-#define RTE_START_SEC_CONST_UNSPECIFIED
+#define RTE_START_SEC_CONST
 #include "rte_memmap.h"
 CONST(Rte_QRomInfoType, RTE_CONST) Rte_{{appl_name}}_QRomInfo[{{queues|length}}] = {
     {%- for queue in queues %}
@@ -899,7 +877,7 @@ CONST(Rte_QRomInfoType, RTE_CONST) Rte_{{appl_name}}_QRomInfo[{{queues|length}}]
     },
     {%- endfor %}
 };
-#define RTE_STOP_SEC_CONST_UNSPECIFIED
+#define RTE_STOP_SEC_CONST
 #include "rte_memmap.h"
 
 #define RTE_START_SEC_CODE
@@ -929,58 +907,58 @@ FUNC(Rte_QReturnType, RTE_CODE) Rte_Dequeue_{{appl_name}}(Rte_QIndexType q, void
     {%- set queues_inter_osa_same_core = ioc_enqueues["inter_osa_same_core"] %}
     {%- set queues_inter_core = ioc_enqueues["inter_core"] %}
     {%- if queues_inter_osa_same_core %}
-#define RTE_START_SEC_SHARED_{{appl_name.upper()}}_VAR_ZERO_INIT_UNSPECIFIED
+#define RTE_START_SEC_{{appl_name.upper()}}_SEMISHARED_BSS
 #include "rte_memmap.h"
         {%- for queue in queues_inter_osa_same_core %}
-VAR(uint8, RTE_SHARED_{{appl_name.upper()}}_VAR_ZERO_INIT) Rte_ioc_{{queue['name']}}_Overflow0;
+VAR(uint8, RTE_{{appl_name.upper()}}_SEMISHARED_BSS) Rte_ioc_{{queue['name']}}_Overflow0;
         {%- endfor %}
-#define RTE_STOP_SEC_SHARED_{{appl_name.upper()}}_VAR_ZERO_INIT_UNSPECIFIED
+#define RTE_STOP_SEC_{{appl_name.upper()}}_SEMISHARED_BSS
 #include "rte_memmap.h"
 
-#define RTE_START_SEC_PRIVATE_{{appl_name.upper()}}_VAR_ZERO_INIT_UNSPECIFIED
+#define RTE_START_SEC_{{appl_name.upper()}}_PRIVATE_BSS
 #include "rte_memmap.h"
         {%- for queue in queues_inter_osa_same_core %}
-VAR(uint8, RTE_PRIVATE_{{appl_name.upper()}}_VAR_ZERO_INIT) Rte_ioc_{{queue['name']}}_tail;
+VAR(uint8, RTE_{{appl_name.upper()}}_PRIVATE_BSS) Rte_ioc_{{queue['name']}}_tail;
         {%- endfor %}
-#define RTE_STOP_SEC_PRIVATE_{{appl_name.upper()}}_VAR_ZERO_INIT_UNSPECIFIED
+#define RTE_STOP_SEC_{{appl_name.upper()}}_PRIVATE_BSS
 #include "rte_memmap.h"
     {%- endif %}
 
     {%- if queues_inter_core %}
-#define RTE_START_SEC_SHARED_{{appl_name.upper()}}_VAR_ZERO_INIT_UNSPECIFIED
+#define RTE_START_SEC_{{appl_name.upper()}}_SEMISHARED_BSS
 #include "rte_memmap.h"
         {%- for queue in queues_inter_core %}
-VAR(uint8, RTE_SHARED_{{appl_name.upper()}}_VAR_ZERO_INIT) Rte_ioc_{{queue['name']}}_Overflow0;
+VAR(uint8, RTE_{{appl_name.upper()}}_SEMISHARED_BSS) Rte_ioc_{{queue['name']}}_Overflow0;
         {%- endfor %}
-#define RTE_STOP_SEC_SHARED_{{appl_name.upper()}}_VAR_ZERO_INIT_UNSPECIFIED
+#define RTE_STOP_SEC_{{appl_name.upper()}}_SEMISHARED_BSS
 #include "rte_memmap.h"
 
-#define RTE_START_SEC_PRIVATE_{{appl_name.upper()}}_VAR_ZERO_INIT_UNSPECIFIED
+#define RTE_START_SEC_{{appl_name.upper()}}_PRIVATE_BSS
 #include "rte_memmap.h"
         {%- for queue in queues_inter_core %}
-VAR(uint8, RTE_PRIVATE_{{appl_name.upper()}}_VAR_ZERO_INIT) Rte_ioc_{{queue['name']}}_tail;
+VAR(uint8, RTE_{{appl_name.upper()}}_PRIVATE_BSS) Rte_ioc_{{queue['name']}}_tail;
         {%- endfor %}
-#define RTE_STOP_SEC_PRIVATE_{{appl_name.upper()}}_VAR_ZERO_INIT_UNSPECIFIED
+#define RTE_STOP_SEC_{{appl_name.upper()}}_PRIVATE_BSS
 #include "rte_memmap.h"
     {%- endif %}
 
     {%- if queues_inter_osa_same_core %}
-#define RTE_START_SEC_SHARED_{{appl_name.upper()}}_VAR_NO_INIT_UNSPECIFIED
+#define RTE_START_SEC_{{appl_name.upper()}}_SEMISHARED_BSS
 #include "rte_memmap.h"
         {%- for queue in queues_inter_osa_same_core %}
-VAR({{queue['datatype']['name']}}, RTE_SHARED_{{appl_name.upper()}}_VAR_NO_INIT) Rte_ioc_{{queue['name']}}[{{queue['size']}}];
+VAR({{queue['datatype']['name']}}, RTE_{{appl_name.upper()}}_SEMISHARED_BSS) Rte_ioc_{{queue['name']}}[{{queue['size']}}];
         {%- endfor %}
-#define RTE_STOP_SEC_SHARED_{{appl_name.upper()}}_VAR_NO_INIT_UNSPECIFIED
+#define RTE_STOP_SEC_{{appl_name.upper()}}_SEMISHARED_BSS
 #include "rte_memmap.h"
     {%- endif %}
 
     {%- if queues_inter_core %}
-#define RTE_START_SEC_SHARED_{{appl_name.upper()}}_VAR_NO_INIT_UNSPECIFIED
+#define RTE_START_SEC_{{appl_name.upper()}}_SEMISHARED_BSS
 #include "rte_memmap.h"
         {%- for queue in queues_inter_core %}
-VAR({{queue['datatype']['name']}}, RTE_SHARED_{{appl_name.upper()}}_VAR_NO_INIT) Rte_ioc_{{queue['name']}}[{{queue['size']}}];
+VAR({{queue['datatype']['name']}}, RTE_{{appl_name.upper()}}_SEMISHARED_BSS) Rte_ioc_{{queue['name']}}[{{queue['size']}}];
         {%- endfor %}
-#define RTE_STOP_SEC_SHARED_{{appl_name.upper()}}_VAR_NO_INIT_UNSPECIFIED
+#define RTE_STOP_SEC_{{appl_name.upper()}}_SEMISHARED_BSS
 #include "rte_memmap.h"
     {%- endif %}
 {%- endif %}
@@ -991,50 +969,50 @@ VAR({{queue['datatype']['name']}}, RTE_SHARED_{{appl_name.upper()}}_VAR_NO_INIT)
     {%- set queues_inter_osa_same_core = ioc_dequeues["inter_osa_same_core"] %}
     {%- set queues_inter_core = ioc_dequeues["inter_core"] %}
     {%- if queues_inter_osa_same_core %}
-#define RTE_START_SEC_SHARED_{{appl_name.upper()}}_VAR_ZERO_INIT_UNSPECIFIED
+#define RTE_START_SEC_{{appl_name.upper()}}_SEMISHARED_BSS
 #include "rte_memmap.h"
         {%- for queue in queues_inter_osa_same_core %}
-VAR(uint8, RTE_SHARED_{{appl_name.upper()}}_VAR_ZERO_INIT) Rte_ioc_{{queue['name']}}_Overflow1;
+VAR(uint8, RTE_{{appl_name.upper()}}_SEMISHARED_BSS) Rte_ioc_{{queue['name']}}_Overflow1;
         {%- endfor %}
-#define RTE_STOP_SEC_SHARED_{{appl_name.upper()}}_VAR_ZERO_INIT_UNSPECIFIED
+#define RTE_STOP_SEC_{{appl_name.upper()}}_SEMISHARED_BSS
 #include "rte_memmap.h"
 
-#define RTE_START_SEC_PRIVATE_{{appl_name.upper()}}_VAR_ZERO_INIT_UNSPECIFIED
+#define RTE_START_SEC_{{appl_name.upper()}}_PRIVATE_BSS
 #include "rte_memmap.h"
         {%- for queue in queues_inter_osa_same_core %}
-VAR(uint8, RTE_PRIVATE_{{appl_name.upper()}}_VAR_ZERO_INIT) Rte_ioc_{{queue['name']}}_head;
+VAR(uint8, RTE_{{appl_name.upper()}}_PRIVATE_BSS) Rte_ioc_{{queue['name']}}_head;
         {%- endfor %}
-#define RTE_STOP_SEC_PRIVATE_{{appl_name.upper()}}_VAR_ZERO_INIT_UNSPECIFIED
+#define RTE_STOP_SEC_{{appl_name.upper()}}_PRIVATE_BSS
 #include "rte_memmap.h"
     {%- endif %}
 
     {%- if queues_inter_core %}
-#define RTE_START_SEC_SHARED_{{appl_name.upper()}}_VAR_ZERO_INIT_UNSPECIFIED
+#define RTE_START_SEC_{{appl_name.upper()}}_SEMISHARED_BSS
 #include "rte_memmap.h"
         {%- for queue in queues_inter_core %}
-VAR(uint8, RTE_SHARED_{{appl_name.upper()}}_VAR_ZERO_INIT) Rte_ioc_{{queue['name']}}_Overflow1;
+VAR(uint8, RTE_{{appl_name.upper()}}_SEMISHARED_BSS) Rte_ioc_{{queue['name']}}_Overflow1;
         {%- endfor %}
-#define RTE_STOP_SEC_SHARED_{{appl_name.upper()}}_VAR_ZERO_INIT_UNSPECIFIED
+#define RTE_STOP_SEC_{{appl_name.upper()}}_SEMISHARED_BSS
 #include "rte_memmap.h"
 
-#define RTE_START_SEC_PRIVATE_{{appl_name.upper()}}_VAR_ZERO_INIT_UNSPECIFIED
+#define RTE_START_SEC_{{appl_name.upper()}}_PRIVATE_BSS
 #include "rte_memmap.h"
         {%- for queue in queues_inter_core %}
-VAR(uint8, RTE_PRIVATE_{{appl_name.upper()}}_VAR_ZERO_INIT) Rte_ioc_{{queue['name']}}_head;
+VAR(uint8, RTE_{{appl_name.upper()}}_PRIVATE_BSS) Rte_ioc_{{queue['name']}}_head;
         {%- endfor %}
-#define RTE_STOP_SEC_PRIVATE_{{appl_name.upper()}}_VAR_ZERO_INIT_UNSPECIFIED
+#define RTE_STOP_SEC_{{appl_name.upper()}}_PRIVATE_BSS
 #include "rte_memmap.h"
     {%- endif %}
 
-#define RTE_START_SEC_GLOBAL_VAR_ZERO_INIT_UNSPECIFIED
+#define RTE_START_SEC_MULTI_APP_BSS
 #include "rte_memmap.h"
     {%- for queue in queues_inter_osa_same_core %}
-VAR(uint8, RTE_GLOBAL_VAR_ZERO_INIT) Rte_ioc_{{queue['name']}}_ElementCnt;
+VAR(uint8, RTE_MULTI_APP_BSS) Rte_ioc_{{queue['name']}}_ElementCnt;
     {%- endfor %}
     {%- for queue in queues_inter_core %}
-VAR(uint8, RTE_GLOBAL_VAR_ZERO_INIT) Rte_ioc_{{queue['name']}}_ElementCnt;
+VAR(uint8, RTE_MULTI_APP_BSS) Rte_ioc_{{queue['name']}}_ElementCnt;
     {%- endfor %}
-#define RTE_STOP_SEC_GLOBAL_VAR_ZERO_INIT_UNSPECIFIED
+#define RTE_STOP_SEC_MULTI_APP_BSS
 #include "rte_memmap.h"
 {%- endif %}
 
@@ -1058,52 +1036,52 @@ VAR(uint8, RTE_GLOBAL_VAR_ZERO_INIT) Rte_ioc_{{queue['name']}}_ElementCnt;
         {%- set queues_inter_osa_same_core = queues["inter_osa_same_core"] %}
         {%- set queues_inter_core = queues["inter_core"] %}
         {%- if queues_intra_osa or queues_inter_osa_same_core or queues_inter_core %}
-#define RTE_START_SEC_PRIVATE_{{appl_name.upper()}}_VAR_ZERO_INIT_UNSPECIFIED
+#define RTE_START_SEC_{{appl_name.upper()}}_PRIVATE_BSS
 #include "rte_memmap.h"
             {%- for queue in queues_intra_osa %}
-VAR(uint8, RTE_PRIVATE_{{appl_name.upper()}}_VAR_ZERO_INIT) Rte_ioc_{{queue['name']}}_tail;
-VAR(uint8, RTE_PRIVATE_{{appl_name.upper()}}_VAR_ZERO_INIT) Rte_ioc_{{queue['name']}}_Overflow0;
+VAR(uint8, RTE_{{appl_name.upper()}}_PRIVATE_BSS) Rte_ioc_{{queue['name']}}_tail;
+VAR(uint8, RTE_{{appl_name.upper()}}_PRIVATE_BSS) Rte_ioc_{{queue['name']}}_Overflow0;
             {%- endfor %}
             {%- for queue in queues_inter_osa_same_core %}
-VAR(uint8, RTE_PRIVATE_{{appl_name.upper()}}_VAR_ZERO_INIT) Rte_ioc_{{queue['name']}}_tail;
+VAR(uint8, RTE_{{appl_name.upper()}}_PRIVATE_BSS) Rte_ioc_{{queue['name']}}_tail;
             {%- endfor %}
             {%- for queue in queues_inter_core %}
-VAR(uint8, RTE_PRIVATE_{{appl_name.upper()}}_VAR_ZERO_INIT) Rte_ioc_{{queue['name']}}_tail;
+VAR(uint8, RTE_{{appl_name.upper()}}_PRIVATE_BSS) Rte_ioc_{{queue['name']}}_tail;
             {%- endfor %}
-#define RTE_STOP_SEC_PRIVATE_{{appl_name.upper()}}_VAR_ZERO_INIT_UNSPECIFIED
+#define RTE_STOP_SEC_{{appl_name.upper()}}_PRIVATE_BSS
 #include "rte_memmap.h"
         {%- endif %}
         {%- if queues_inter_osa_same_core or queues_inter_core %}
-#define RTE_START_SEC_SHARED_{{appl_name.upper()}}_VAR_ZERO_INIT_UNSPECIFIED
+#define RTE_START_SEC_{{appl_name.upper()}}_SEMISHARED_BSS
 #include "rte_memmap.h"
             {%- for queue in queues_inter_osa_same_core %}
-VAR(uint8, RTE_SHARED_{{appl_name.upper()}}_VAR_ZERO_INIT) Rte_ioc_{{queue['name']}}_Overflow0;
+VAR(uint8, RTE_{{appl_name.upper()}}_SEMISHARED_BSS) Rte_ioc_{{queue['name']}}_Overflow0;
             {%- endfor %}
             {%- for queue in queues_inter_core %}
-VAR(uint8, RTE_SHARED_{{appl_name.upper()}}_VAR_ZERO_INIT) Rte_ioc_{{queue['name']}}_Overflow0;
+VAR(uint8, RTE_{{appl_name.upper()}}_SEMISHARED_BSS) Rte_ioc_{{queue['name']}}_Overflow0;
             {%- endfor %}
-#define RTE_STOP_SEC_SHARED_{{appl_name.upper()}}_VAR_ZERO_INIT_UNSPECIFIED
+#define RTE_STOP_SEC_{{appl_name.upper()}}_SEMISHARED_BSS
 #include "rte_memmap.h"
         {%- endif %}
         {%- if queues_intra_osa %}
-#define RTE_START_SEC_PRIVATE_{{appl_name.upper()}}_VAR_NO_INIT_UNSPECIFIED
+#define RTE_START_SEC_{{appl_name.upper()}}_PRIVATE_BSS
 #include "rte_memmap.h"
             {%- for queue in queues_intra_osa %}
-VAR(uint8, RTE_PRIVATE_{{appl_name.upper()}}_VAR_NO_INIT) Rte_ioc_{{queue['name']}}[{{queue['size']}}];
+VAR(uint8, RTE_{{appl_name.upper()}}_PRIVATE_BSS) Rte_ioc_{{queue['name']}}[{{queue['size']}}];
             {%- endfor %}
-#define RTE_STOP_SEC_PRIVATE_{{appl_name.upper()}}_VAR_NO_INIT_UNSPECIFIED
+#define RTE_STOP_SEC_{{appl_name.upper()}}_PRIVATE_BSS
 #include "rte_memmap.h"
         {%- endif %}
         {%- if queues_inter_osa_same_core or queues_inter_core %}
-#define RTE_START_SEC_SHARED_{{appl_name.upper()}}_VAR_NO_INIT_UNSPECIFIED
+#define RTE_START_SEC_{{appl_name.upper()}}_SEMISHARED_BSS
 #include "rte_memmap.h"
             {%- for queue in queues_inter_osa_same_core %}
-VAR(uint8, RTE_SHARED_{{appl_name.upper()}}_VAR_NO_INIT) Rte_ioc_{{queue['name']}}[{{queue['size']}}];
+VAR(uint8, RTE_{{appl_name.upper()}}_SEMISHARED_BSS) Rte_ioc_{{queue['name']}}[{{queue['size']}}];
             {%- endfor %}
             {%- for queue in queues_inter_core %}
-VAR(uint8, RTE_SHARED_{{appl_name.upper()}}_VAR_NO_INIT) Rte_ioc_{{queue['name']}}[{{queue['size']}}];
+VAR(uint8, RTE_{{appl_name.upper()}}_SEMISHARED_BSS) Rte_ioc_{{queue['name']}}[{{queue['size']}}];
             {%- endfor %}
-#define RTE_STOP_SEC_SHARED_{{appl_name.upper()}}_VAR_NO_INIT_UNSPECIFIED
+#define RTE_STOP_SEC_{{appl_name.upper()}}_SEMISHARED_BSS
 #include "rte_memmap.h"
         {%- endif %}
     {%- endfor %}
@@ -1116,53 +1094,53 @@ VAR(uint8, RTE_SHARED_{{appl_name.upper()}}_VAR_NO_INIT) Rte_ioc_{{queue['name']
     {%- set ioc_dequeues_inter_osa_same_core = cs_ioc_dequeues[appl_name]["inter_osa_same_core"] %}
     {%- set ioc_dequeues_inter_core = cs_ioc_dequeues[appl_name]["inter_core"] %}
     {%- if ioc_dequeues_intra_osa or ioc_dequeues_inter_osa_same_core or ioc_dequeues_inter_core %}
-#define RTE_START_SEC_PRIVATE_{{appl_name.upper()}}_VAR_ZERO_INIT_UNSPECIFIED
+#define RTE_START_SEC_{{appl_name.upper()}}_PRIVATE_BSS
 #include "rte_memmap.h"
     {%- for queue in ioc_dequeues_intra_osa %}
-VAR(uint8, RTE_PRIVATE_{{appl_name.upper()}}_VAR_ZERO_INIT) Rte_ioc_{{queue['name']}}_head;
-VAR(uint8, RTE_PRIVATE_{{appl_name.upper()}}_VAR_ZERO_INIT) Rte_ioc_{{queue['name']}}_Overflow1;
-VAR(uint8, RTE_PRIVATE_{{appl_name.upper()}}_VAR_ZERO_INIT) Rte_ioc_{{queue['name']}}_ElementCnt;
+VAR(uint8, RTE_{{appl_name.upper()}}_PRIVATE_BSS) Rte_ioc_{{queue['name']}}_head;
+VAR(uint8, RTE_{{appl_name.upper()}}_PRIVATE_BSS) Rte_ioc_{{queue['name']}}_Overflow1;
+VAR(uint8, RTE_{{appl_name.upper()}}_PRIVATE_BSS) Rte_ioc_{{queue['name']}}_ElementCnt;
     {%- endfor %}
     {%- for queue in ioc_dequeues_inter_osa_same_core %}
-VAR(uint8, RTE_PRIVATE_{{appl_name.upper()}}_VAR_ZERO_INIT) Rte_ioc_{{queue['name']}}_head;
+VAR(uint8, RTE_{{appl_name.upper()}}_PRIVATE_BSS) Rte_ioc_{{queue['name']}}_head;
     {%- endfor %}
     {%- for queue in ioc_dequeues_inter_core %}
-VAR(uint8, RTE_PRIVATE_{{appl_name.upper()}}_VAR_ZERO_INIT) Rte_ioc_{{queue['name']}}_head;
+VAR(uint8, RTE_{{appl_name.upper()}}_PRIVATE_BSS) Rte_ioc_{{queue['name']}}_head;
     {%- endfor %}
-#define RTE_STOP_SEC_PRIVATE_{{appl_name.upper()}}_VAR_ZERO_INIT_UNSPECIFIED
+#define RTE_STOP_SEC_{{appl_name.upper()}}_PRIVATE_BSS
 #include "rte_memmap.h"
     {%- endif %}
 
     {%- if ioc_dequeues_inter_osa_same_core or ioc_dequeues_inter_core %}
-#define RTE_START_SEC_SHARED_{{appl_name.upper()}}_VAR_ZERO_INIT_UNSPECIFIED
+#define RTE_START_SEC_{{appl_name.upper()}}_SEMISHARED_BSS
 #include "rte_memmap.h"
         {%- for queue in ioc_dequeues_inter_osa_same_core %}
-VAR(uint8, RTE_SHARED_{{appl_name.upper()}}_VAR_ZERO_INIT) Rte_ioc_{{queue['name']}}_Overflow1;
+VAR(uint8, RTE_{{appl_name.upper()}}_SEMISHARED_BSS) Rte_ioc_{{queue['name']}}_Overflow1;
         {%- endfor %}
         {%- for queue in ioc_dequeues_inter_core %}
-VAR(uint8, RTE_SHARED_{{appl_name.upper()}}_VAR_ZERO_INIT) Rte_ioc_{{queue['name']}}_Overflow1;
+VAR(uint8, RTE_{{appl_name.upper()}}_SEMISHARED_BSS) Rte_ioc_{{queue['name']}}_Overflow1;
         {%- endfor %}
-#define RTE_STOP_SEC_SHARED_{{appl_name.upper()}}_VAR_ZERO_INIT_UNSPECIFIED
+#define RTE_STOP_SEC_{{appl_name.upper()}}_SEMISHARED_BSS
 #include "rte_memmap.h"
     {%- endif %}
 
     {%- if ioc_dequeues_inter_osa_same_core %}
-#define RTE_START_SEC_SHARED_CORE{{core_id}}_VAR_ZERO_INIT_UNSPECIFIED
+#define RTE_START_SEC_MULTI_APP_BSS
 #include "rte_memmap.h"
         {%- for queue in ioc_dequeues_inter_osa_same_core %}
-VAR(uint8, RTE_SHARED_CORE{{core_id}}_VAR_ZERO_INIT) Rte_ioc_{{queue['name']}}_ElementCnt;
+VAR(uint8, RTE_MULTI_APP_BSS) Rte_ioc_{{queue['name']}}_ElementCnt;
         {%- endfor %}
-#define RTE_STOP_SEC_SHARED_CORE{{core_id}}_VAR_ZERO_INIT_UNSPECIFIED
+#define RTE_STOP_SEC_MULTI_APP_BSS
 #include "rte_memmap.h"
     {%- endif %}
 
     {%- if ioc_dequeues_inter_core %}
-#define RTE_START_SEC_GLOBAL_VAR_ZERO_INIT_UNSPECIFIED
+#define RTE_START_SEC_MULTI_APP_BSS
 #include "rte_memmap.h"
         {%- for queue in ioc_dequeues_inter_core %}
-VAR(uint8, RTE_GLOBAL_VAR_ZERO_INIT) Rte_ioc_{{queue['name']}}_ElementCnt;
+VAR(uint8, RTE_MULTI_APP_BSS) Rte_ioc_{{queue['name']}}_ElementCnt;
         {%- endfor %}
-#define RTE_STOP_SEC_GLOBAL_VAR_ZERO_INIT_UNSPECIFIED
+#define RTE_STOP_SEC_MULTI_APP_BSS
 #include "rte_memmap.h"
     {%- endif %}
 {%- endif %}
@@ -1214,31 +1192,31 @@ VAR(uint8, RTE_GLOBAL_VAR_ZERO_INIT) Rte_ioc_{{queue['name']}}_ElementCnt;
  * Buffers for intra-osa S/R Non-Queue
  */
 {# non-zero init value #}
-#define RTE_START_SEC_PRIVATE_{{appl_name.upper()}}_VAR_INIT_UNSPECIFIED
+#define RTE_START_SEC_{{appl_name.upper()}}_PRIVATE_DATA
 #include "rte_memmap.h"
     {%- if nonzero_boolean_vars %}
     {%- set init_value_str = get_boolean_variables_init_value_list(appl_name, nonzero_boolean_vars) %}
-VAR(Rte_Private_{{appl_name}}_NonZeroBool_VarType, RTE_PRIVATE_{{appl_name.upper()}}_VAR_INIT) Rte_Private_{{appl_name}}_NonZeroBool_Vars = {{init_value_str}};
+VAR(Rte_Private_{{appl_name}}_NonZeroBool_VarType, RTE_{{appl_name.upper()}}_PRIVATE_DATA) Rte_Private_{{appl_name}}_NonZeroBool_Vars = {{init_value_str}};
     {%- endif %}
     {%- if intra_osa_buffers %}
         {%- for buffer in intra_osa_buffers[appl_name].values() %}
-    {{-sr_init_value_non_zero("RTE_PRIVATE_", appl_name.upper(), "VAR_INIT", buffer)}}
+    {{-sr_init_value_non_zero("RTE_", appl_name.upper(), "PRIVATE_DATA", buffer)}}
         {%- endfor %}
     {%- endif %}
-#define RTE_STOP_SEC_PRIVATE_{{appl_name.upper()}}_VAR_INIT_UNSPECIFIED
+#define RTE_STOP_SEC_{{appl_name.upper()}}_PRIVATE_DATA
 #include "rte_memmap.h"
 {# zero init value #}
-#define RTE_START_SEC_PRIVATE_{{appl_name.upper()}}_VAR_ZERO_INIT_UNSPECIFIED
+#define RTE_START_SEC_{{appl_name.upper()}}_PRIVATE_BSS
 #include "rte_memmap.h"
     {%- if zero_boolean_vars %}
-VAR(Rte_Private_{{appl_name}}_ZeroBool_VarType, RTE_PRIVATE_{{appl_name.upper()}}_VAR_ZERO_INIT) Rte_Private_{{appl_name}}_ZeroBool_Vars;
+VAR(Rte_Private_{{appl_name}}_ZeroBool_VarType, RTE_{{appl_name.upper()}}_PRIVATE_BSS) Rte_Private_{{appl_name}}_ZeroBool_Vars;
     {%- endif %}
     {%- if intra_osa_buffers %}
         {%- for buffer in intra_osa_buffers[appl_name].values() %}
-    {{-sr_init_value_zero("RTE_PRIVATE_", appl_name.upper(), "VAR_ZERO_INIT", buffer)}}
+    {{-sr_init_value_zero("RTE_", appl_name.upper(), "PRIVATE_BSS", buffer)}}
         {%- endfor %}
     {%- endif %}
-#define RTE_STOP_SEC_PRIVATE_{{appl_name.upper()}}_VAR_ZERO_INIT_UNSPECIFIED
+#define RTE_STOP_SEC_{{appl_name.upper()}}_PRIVATE_BSS
 #include "rte_memmap.h"
 {%- endif %}
 
@@ -1248,20 +1226,20 @@ VAR(Rte_Private_{{appl_name}}_ZeroBool_VarType, RTE_PRIVATE_{{appl_name.upper()}
  * Buffers for osa shared in same core S/R Non-Queue
  */
 {# non-zero init value #}
-#define RTE_START_SEC_SHARED_{{appl_name.upper()}}_VAR_INIT_UNSPECIFIED
+#define RTE_START_SEC_{{appl_name.upper()}}_SEMISHARED_DATA
 #include "rte_memmap.h"
 {%- for buffer in osa_share_buffers[appl_name].values() %}
-    {{-sr_init_value_non_zero("RTE_SHARED_", appl_name.upper(), "VAR_INIT", buffer)}}
+    {{-sr_init_value_non_zero("RTE_", appl_name.upper(), "SEMISHARED_DATA", buffer)}}
 {%- endfor %}
-#define RTE_STOP_SEC_SHARED_{{appl_name.upper()}}_VAR_INIT_UNSPECIFIED
+#define RTE_STOP_SEC_{{appl_name.upper()}}_SEMISHARED_DATA
 #include "rte_memmap.h"
 {# zero init value #}
-#define RTE_START_SEC_SHARED_{{appl_name.upper()}}_VAR_ZERO_INIT_UNSPECIFIED
+#define RTE_START_SEC_{{appl_name.upper()}}_SEMISHARED_BSS
 #include "rte_memmap.h"
 {%- for buffer in osa_share_buffers[appl_name].values() %}
-    {{-sr_init_value_zero("RTE_SHARED_", appl_name.upper(), "VAR_ZERO_INIT", buffer)}}
+    {{-sr_init_value_zero("RTE_", appl_name.upper(), "SEMISHARED_BSS", buffer)}}
 {%- endfor %}
-#define RTE_STOP_SEC_SHARED_{{appl_name.upper()}}_VAR_ZERO_INIT_UNSPECIFIED
+#define RTE_STOP_SEC_{{appl_name.upper()}}_SEMISHARED_BSS
 #include "rte_memmap.h"
 {%- endif %}
 
@@ -1271,20 +1249,20 @@ VAR(Rte_Private_{{appl_name}}_ZeroBool_VarType, RTE_PRIVATE_{{appl_name.upper()}
  * Buffers for inter-osa in same core S/R Non-Queue
  */
 {# non-zero init value #}
-#define RTE_START_SEC_SHARED_CORE{{core_id}}_VAR_INIT_UNSPECIFIED
+#define RTE_START_SEC_CORE{{core_id}}_SEMISHARED_DATA
 #include "rte_memmap.h"
 {%- for buffer in inter_osa_buffers[appl_name].values() %}
-    {{-sr_init_value_non_zero("RTE_SHARED_CORE", core_id, "VAR_INIT", buffer)}}
+    {{-sr_init_value_non_zero("RTE_CORE", core_id, "SEMISHARED_DATA", buffer)}}
 {%- endfor %}
-#define RTE_STOP_SEC_SHARED_CORE{{core_id}}_VAR_INIT_UNSPECIFIED
+#define RTE_STOP_SEC_CORE{{core_id}}_SEMISHARED_DATA
 #include "rte_memmap.h"
 {# zero init value #}
-#define RTE_START_SEC_SHARED_CORE{{core_id}}_VAR_ZERO_INIT_UNSPECIFIED
+#define RTE_START_SEC_CORE{{core_id}}_SEMISHARED_BSS
 #include "rte_memmap.h"
 {%- for buffer in inter_osa_buffers[appl_name].values() %}
-    {{-sr_init_value_zero("RTE_SHARED_CORE", core_id, "VAR_ZERO_INIT", buffer)}}
+    {{-sr_init_value_zero("RTE_CORE", core_id, "SEMISHARED_BSS", buffer)}}
 {%- endfor %}
-#define RTE_STOP_SEC_SHARED_CORE{{core_id}}_VAR_ZERO_INIT_UNSPECIFIED
+#define RTE_STOP_SEC_CORE{{core_id}}_SEMISHARED_BSS
 #include "rte_memmap.h"
 {%- endif %}
 
@@ -1296,81 +1274,81 @@ VAR(Rte_Private_{{appl_name}}_ZeroBool_VarType, RTE_PRIVATE_{{appl_name.upper()}
  * Buffers for inter-core S/R Non-Queue
  */
 {# non-zero init value #}
-#define RTE_START_SEC_SHARED_{{appl_name.upper()}}_VAR_INIT_UNSPECIFIED
+#define RTE_START_SEC_{{appl_name.upper()}}_SEMISHARED_DATA
 #include "rte_memmap.h"
 {%- for buffer in inter_core_buffers_appl.values() %}
-    {{-sr_init_value_non_zero("RTE_SHARED_", appl_name.upper(), "VAR_INIT", buffer)}}
+    {{-sr_init_value_non_zero("RTE_", appl_name.upper(), "SEMISHARED_DATA", buffer)}}
 {%- endfor %}
-#define RTE_STOP_SEC_SHARED_{{appl_name.upper()}}_VAR_INIT_UNSPECIFIED
+#define RTE_STOP_SEC_{{appl_name.upper()}}_SEMISHARED_DATA
 #include "rte_memmap.h"
 {# zero init value #}
-#define RTE_START_SEC_SHARED_{{appl_name.upper()}}_VAR_ZERO_INIT_UNSPECIFIED
+#define RTE_START_SEC_{{appl_name.upper()}}_SEMISHARED_DATA
 #include "rte_memmap.h"
 {%- for buffer in inter_core_buffers_appl.values() %}
-    {{-sr_init_value_zero("RTE_SHARED_", appl_name.upper(), "VAR_ZERO_INIT", buffer)}}
+    {{-sr_init_value_zero("RTE_", appl_name.upper(), "SEMISHARED_DATA", buffer)}}
 {%- endfor %}
-#define RTE_STOP_SEC_SHARED_{{appl_name.upper()}}_VAR_ZERO_INIT_UNSPECIFIED
+#define RTE_STOP_SEC_{{appl_name.upper()}}_SEMISHARED_DATA
 #include "rte_memmap.h"
 {%- endif %}
 
 {%- if inter_core_buffers_global %}
 {# non-zero init value #}
-#define RTE_START_SEC_GLOBAL_VAR_INIT_UNSPECIFIED
+#define RTE_START_SEC_MULTI_APP_DATA
 #include "rte_memmap.h"
     {%- for buffer in inter_core_buffers_global.values() %}
-        {{-sr_init_value_non_zero("RTE_GLOBAL", "", "VAR_INIT", buffer)}}
+        {{-sr_init_value_non_zero("RTE", "", "MULTI_APP_DATA", buffer)}}
     {%- endfor %}
-#define RTE_STOP_SEC_GLOBAL_VAR_INIT_UNSPECIFIED
+#define RTE_STOP_SEC_MULTI_APP_DATA
 #include "rte_memmap.h"
 {# zero init value #}
-#define RTE_START_SEC_GLOBAL_VAR_ZERO_INIT_UNSPECIFIED
+#define RTE_START_SEC_MULTI_APP_DATA
 #include "rte_memmap.h"
     {%- for buffer in inter_core_buffers_global.values() %}
-        {{-sr_init_value_zero("RTE_GLOBAL", "", "VAR_ZERO_INIT", buffer)}}
+        {{-sr_init_value_zero("RTE", "", "MULTI_APP_DATA", buffer)}}
     {%- endfor %}
-#define RTE_STOP_SEC_GLOBAL_VAR_ZERO_INIT_UNSPECIFIED
+#define RTE_STOP_SEC_MULTI_APP_DATA
 #include "rte_memmap.h"
 {%- endif %}
 
 {%- set local_counters = get_appl_sr_unqueued_counters_definition(appl_name)["local"] %}
 {%- if local_counters["intra_osa"] %}
-#define RTE_START_SEC_PRIVATE_{{appl_name.upper()}}_VAR_ZERO_INIT_UNSPECIFIED
+#define RTE_START_SEC_{{appl_name.upper()}}_PRIVATE_DATA
 #include "rte_memmap.h"
     {%- for local_counter in local_counters["intra_osa"] %}
-VAR(uint32, RTE_PRIVATE_{{appl_name.upper()}}_VAR_ZERO_INIT) {{local_counter}};
+VAR(uint32, RTE_{{appl_name.upper()}}_PRIVATE_DATA) {{local_counter}};
     {%- endfor %}
-#define RTE_STOP_SEC_PRIVATE_{{appl_name.upper()}}_VAR_ZERO_INIT_UNSPECIFIED
+#define RTE_STOP_SEC_{{appl_name.upper()}}_PRIVATE_DATA
 #include "rte_memmap.h"
 {%- endif %}
 
 {%- if local_counters["inter_osa_same_core"] %}
-#define RTE_START_SEC_SHARED_CORE{{core_id}}_VAR_ZERO_INIT_UNSPECIFIED
+#define RTE_START_SEC_CORE{{core_id}}_SEMISHARED_DATA
 #include "rte_memmap.h"
     {%- for local_counter in local_counters["inter_osa_same_core"] %}
-VAR(uint32, RTE_SHARED_CORE{{core_id}}_VAR_ZERO_INIT) {{local_counter}};
+VAR(uint32, RTE_CORE{{core_id}}_SEMISHARED_DATA) {{local_counter}};
     {%- endfor %}
-#define RTE_STOP_SEC_SHARED_CORE{{core_id}}_VAR_ZERO_INIT_UNSPECIFIED
+#define RTE_STOP_SEC_CORE{{core_id}}_SEMISHARED_DATA
 #include "rte_memmap.h"
 {%- endif %}
 
 {%- if local_counters["inter_core"] %}
-#define RTE_START_SEC_SHARED_{{appl_name.upper()}}_VAR_ZERO_INIT_UNSPECIFIED
+#define RTE_START_SEC_{{appl_name.upper()}}_SEMISHARED_DATA
 #include "rte_memmap.h"
     {%- for local_counter in local_counters["inter_core"] %}
-VAR(uint32, RTE_SHARED_{{appl_name.upper()}}_VAR_ZERO_INIT) {{local_counter}};
+VAR(uint32, RTE_{{appl_name.upper()}}_SEMISHARED_DATA) {{local_counter}};
     {%- endfor %}
-#define RTE_STOP_SEC_SHARED_{{appl_name.upper()}}_VAR_ZERO_INIT_UNSPECIFIED
+#define RTE_STOP_SEC_{{appl_name.upper()}}_SEMISHARED_DATA
 #include "rte_memmap.h"
 {%- endif %}
 
 {%- set global_counters = get_appl_sr_unqueued_counters_definition(appl_name)["global"] %}
 {%- if global_counters["inter_core"] or global_counters["inter_osa_same_core"] %}
-#define RTE_START_SEC_GLOBAL_VAR_ZERO_INIT_UNSPECIFIED
+#define RTE_START_SEC_GLOBAL_DATA
 #include "rte_memmap.h"
     {%- for global_counter in global_counters["inter_core"] + global_counters["inter_osa_same_core"] %}
-VAR(uint32, RTE_GLOBAL_VAR_ZERO_INIT) {{global_counter}};
+VAR(uint32, RTE_GLOBAL_DATA) {{global_counter}};
     {%- endfor %}
-#define RTE_STOP_SEC_GLOBAL_VAR_ZERO_INIT_UNSPECIFIED
+#define RTE_STOP_SEC_GLOBAL_DATA
 #include "rte_memmap.h"
 {%- endif %}
 
@@ -1382,12 +1360,12 @@ VAR(uint32, RTE_GLOBAL_VAR_ZERO_INIT) {{global_counter}};
 /*
  * Update flags for intra-osa S/R Receiver with enableUpdate == True
  */
-#define RTE_START_SEC_PRIVATE_{{appl_name.upper()}}_VAR_ZERO_INIT_UNSPECIFIED
+#define RTE_START_SEC_{{appl_name.upper()}}_PRIVATE_DATA
 #include "rte_memmap.h"
     {%- for flag in intra_osa_flags[appl_name] %}
-VAR(uint8, RTE_PRIVATE_{{appl_name.upper()}}_VAR_ZERO_INIT) {{flag['flag_name']}};
+VAR(uint8, RTE_{{appl_name.upper()}}_PRIVATE_DATA) {{flag['flag_name']}};
     {%- endfor %}
-#define RTE_STOP_SEC_PRIVATE_{{appl_name.upper()}}_VAR_ZERO_INIT_UNSPECIFIED
+#define RTE_STOP_SEC_{{appl_name.upper()}}_PRIVATE_DATA
 #include "rte_memmap.h"
 {%- endif %}
 
@@ -1395,12 +1373,12 @@ VAR(uint8, RTE_PRIVATE_{{appl_name.upper()}}_VAR_ZERO_INIT) {{flag['flag_name']}
 /*
  * Update flags for inter-osa S/R Receiver with enableUpdate == True
  */
-#define RTE_START_SEC_SHARED_CORE{{core_id}}_VAR_ZERO_INIT_UNSPECIFIED
+#define RTE_START_SEC_CORE{{core_id}}_SEMISHARED_DATA
 #include "rte_memmap.h"
     {%- for flag in inter_osa_flags[appl_name] %}
-VAR(uint8, RTE_SHARED_CORE{{core_id}}_VAR_ZERO_INIT) {{flag['flag_name']}};
+VAR(uint8, RTE_CORE{{core_id}}_SEMISHARED_DATA) {{flag['flag_name']}};
     {%- endfor %}
-#define RTE_STOP_SEC_SHARED_CORE{{core_id}}_VAR_ZERO_INIT_UNSPECIFIED
+#define RTE_STOP_SEC_CORE{{core_id}}_SEMISHARED_DATA
 #include "rte_memmap.h"
 {%- endif %}
 
@@ -1408,50 +1386,50 @@ VAR(uint8, RTE_SHARED_CORE{{core_id}}_VAR_ZERO_INIT) {{flag['flag_name']}};
 /*
  * Update flags for inter-osa S/R Receiver with enableUpdate == True
  */
-#define RTE_START_SEC_GLOBAL_VAR_ZERO_INIT_UNSPECIFIED
+#define RTE_START_SEC_GLOBAL_DATA
 #include "rte_memmap.h"
     {%- for flag in inter_core_flags[appl_name] %}
-VAR(uint8, RTE_GLOBAL_VAR_ZERO_INIT) {{flag['flag_name']}};
+VAR(uint8, RTE_GLOBAL_DATA) {{flag['flag_name']}};
     {%- endfor %}
-#define RTE_STOP_SEC_GLOBAL_VAR_ZERO_INIT_UNSPECIFIED
+#define RTE_STOP_SEC_GLOBAL_DATA
 #include "rte_memmap.h"
 {%- endif %}
 
 {# copy buffer for S/R Implicit #}
 {%- set buffers = get_appl_sr_implicit_copy_buffer_list(appl_name) %}
 {%- if buffers %}
-#define RTE_START_SEC_PRIVATE_{{appl_name.upper()}}_VAR_ZERO_INIT_UNSPECIFIED
+#define RTE_START_SEC_{{appl_name.upper()}}_PRIVATE_DATA
 #include "rte_memmap.h"
     {%- for task in buffers %}
 WARNING_542_DISABLE
-VAR(Rte_ts_{{task}}, RTE_PRIVATE_{{appl_name.upper()}}_VAR_ZERO_INIT) Rte_{{task}};
+VAR(Rte_ts_{{task}}, RTE_{{appl_name.upper()}}_PRIVATE_DATA) Rte_{{task}};
 WARNING_542_RESTORE
     {%- endfor%}
-#define RTE_STOP_SEC_PRIVATE_{{appl_name.upper()}}_VAR_ZERO_INIT_UNSPECIFIED
+#define RTE_STOP_SEC_{{appl_name.upper()}}_PRIVATE_DATA
 #include "rte_memmap.h"
 {%- endif %}
 
 {# Buffer for schedule table of basic task #}
 {%- set task_list = get_cur_appl_basic_task_with_st_list() %}
 {%- if task_list %}
-#define RTE_START_SEC_PRIVATE_{{appl_name.upper()}}_VAR_ZERO_INIT_UNSPECIFIED
+#define RTE_START_SEC_{{appl_name.upper()}}_PRIVATE_DATA
 #include "rte_memmap.h"
     {%- for task_info in task_list %}
-VAR(uint32, RTE_PRIVATE_{{appl_name.upper()}}_VAR_ZERO_INIT) Rte_ScheduleTable_{{task_info["task_name"]}}_Step;
+VAR(uint32, RTE_{{appl_name.upper()}}_PRIVATE_DATA) Rte_ScheduleTable_{{task_info["task_name"]}}_Step;
     {%- endfor%}
-#define RTE_STOP_SEC_PRIVATE_{{appl_name.upper()}}_VAR_ZERO_INIT_UNSPECIFIED
+#define RTE_STOP_SEC_{{appl_name.upper()}}_PRIVATE_DATA
 #include "rte_memmap.h"
 {%- endif %}
 
 {#- ModeSwitchAck Flags #}
 {%- set mode_switch_event_pports = get_appl_task_mode_switch_port_list(appl_name, with_pport = "yes") %}
 {%- if mode_switch_event_pports|length %}
-#define RTE_START_SEC_{{mode_switch_event_pports[0]['infix']['mem_ack_flags'].upper()}}_INIT_UNSPECIFIED
+#define RTE_START_SEC_{{mode_switch_event_pports[0]['infix']['mem_ack_flags'].upper()}}_DATA
 #include "rte_memmap.h"
 /*
  * TxAck/ModeSwitchAck Flags
  */
-VAR(Rte_{{appl_name}}_AckFlagsType, RTE_{{mode_switch_event_pports[0]['infix']['mem_ack_flags'].upper()}}_INIT) Rte_{{appl_name}}_AckFlags = {
+VAR(Rte_{{appl_name}}_AckFlagsType, RTE_{{mode_switch_event_pports[0]['infix']['mem_ack_flags'].upper()}}_DATA) Rte_{{appl_name}}_AckFlags = {
 {% for mode_switch_event_pport in mode_switch_event_pports %}
     {%- if not loop.last -%}
     1,
@@ -1460,7 +1438,7 @@ VAR(Rte_{{appl_name}}_AckFlagsType, RTE_{{mode_switch_event_pports[0]['infix']['
     {%- endif -%}
 {%- endfor %}
 };
-#define RTE_STOP_SEC_{{mode_switch_event_pports[0]['infix']['mem_ack_flags'].upper()}}_INIT_UNSPECIFIED
+#define RTE_STOP_SEC_{{mode_switch_event_pports[0]['infix']['mem_ack_flags'].upper()}}_DATA
 #include "rte_memmap.h"
 
 #define Rte_{{appl_name}}_AckFlagsInit() (Rte_MemClr(&Rte_{{appl_name}}_AckFlags, sizeof(Rte_{{appl_name}}_AckFlagsType)))
@@ -1484,23 +1462,23 @@ VAR(Rte_{{appl_name}}_AckFlagsType, RTE_{{mode_switch_event_pports[0]['infix']['
         {%- if inter_partition and connected_osapplication and connected_osapplication == appl_name %}
         {%- set ns.counter = ns.counter + 1 %}
             {%- if ns.counter == 1 %}
-#define RTE_START_SEC_SHARED_{{appl_name.upper()}}_VAR_ZERO_INIT_UNSPECIFIED
+#define RTE_START_SEC_{{appl_name.upper()}}_SEMISHARED_DATA
 #include "rte_memmap.h"
             {%- endif %}
-VAR(uint8, RTE_SHARED_{{appl_name.upper()}}_VAR_ZERO_INIT) Rte_ioc_Rte_M_{{swc_name}}_{{port_name}}_{{mode_group_prototype_name}}_head;
+VAR(uint8, RTE_{{appl_name.upper()}}_SEMISHARED_DATA) Rte_ioc_Rte_M_{{swc_name}}_{{port_name}}_{{mode_group_prototype_name}}_head;
         {%- elif inter_partition and osapplication and osapplication == appl_name %}
         {%- set ns.counter = ns.counter + 1 %}
             {%- if ns.counter == 1 %}
-#define RTE_START_SEC_SHARED_{{appl_name.upper()}}_VAR_ZERO_INIT_UNSPECIFIED
+#define RTE_START_SEC_{{appl_name.upper()}}_SEMISHARED_DATA
 #include "rte_memmap.h"
             {%- endif %}
-VAR(uint8, RTE_SHARED_{{appl_name.upper()}}_VAR_ZERO_INIT) Rte_ioc_Rte_M_{{swc_name}}_{{port_name}}_{{mode_group_prototype_name}}_tail;
+VAR(uint8, RTE_{{appl_name.upper()}}_SEMISHARED_DATA) Rte_ioc_Rte_M_{{swc_name}}_{{port_name}}_{{mode_group_prototype_name}}_tail;
         {%- else %}
             {#- do nothing #}
         {%- endif %}
     {%- endfor %}
     {%- if ns.counter > 0 %}
-#define RTE_STOP_SEC_SHARED_{{appl_name.upper()}}_VAR_ZERO_INIT_UNSPECIFIED
+#define RTE_STOP_SEC_{{appl_name.upper()}}_SEMISHARED_DATA
 #include "rte_memmap.h"
     {%- endif %}
 {#- shared no init #}
@@ -1518,16 +1496,16 @@ VAR(uint8, RTE_SHARED_{{appl_name.upper()}}_VAR_ZERO_INIT) Rte_ioc_Rte_M_{{swc_n
         {%- elif inter_partition and osapplication and osapplication == appl_name %}
         {%- set ns.counter = ns.counter + 1 %}
             {%- if ns.counter == 1 %}
-#define RTE_START_SEC_SHARED_{{appl_name.upper()}}_VAR_NO_INIT_UNSPECIFIED
+#define RTE_START_SEC_{{appl_name.upper()}}_SEMISHARED_BSS
 #include "rte_memmap.h"
             {%- endif %}
-VAR(uint8, RTE_SHARED_{{appl_name.upper()}}_VAR_NO_INIT) Rte_ioc_Rte_M_{{swc_name}}_{{port_name}}_{{mode_group_prototype_name}}_Queue[{{queue_length}}];
+VAR(uint8, RTE_{{appl_name.upper()}}_SEMISHARED_BSS) Rte_ioc_Rte_M_{{swc_name}}_{{port_name}}_{{mode_group_prototype_name}}_Queue[{{queue_length}}];
         {%- else %}
             {#- do nothing #}
         {%- endif %}
     {%- endfor %}
     {%- if ns.counter > 0 %}
-#define RTE_STOP_SEC_SHARED_{{appl_name.upper()}}_VAR_NO_INIT_UNSPECIFIED
+#define RTE_STOP_SEC_{{appl_name.upper()}}_SEMISHARED_BSS
 #include "rte_memmap.h"
     {%- endif %}
 {#- private no init #}
@@ -1547,14 +1525,14 @@ VAR(uint8, RTE_SHARED_{{appl_name.upper()}}_VAR_NO_INIT) Rte_ioc_Rte_M_{{swc_nam
         {%- else %}
         {%- set ns.counter = ns.counter + 1 %}
             {%- if ns.counter == 1 %}
-#define RTE_START_SEC_PRIVATE_{{appl_name.upper()}}_VAR_NO_INIT_UNSPECIFIED
+#define RTE_START_SEC_{{appl_name.upper()}}_PRIVATE_BSS
 #include "rte_memmap.h"
             {%- endif %}
-VAR(uint8, RTE_PRIVATE_{{appl_name.upper()}}_VAR_NO_INIT) Rte_ioc_Rte_M_{{swc_name}}_{{port_name}}_{{mode_group_prototype_name}}_Queue[{{queue_length}}];
+VAR(uint8, RTE_{{appl_name.upper()}}_PRIVATE_BSS) Rte_ioc_Rte_M_{{swc_name}}_{{port_name}}_{{mode_group_prototype_name}}_Queue[{{queue_length}}];
         {%- endif %}
     {%- endfor %}
     {%- if ns.counter > 0 %}
-#define RTE_STOP_SEC_PRIVATE_{{appl_name.upper()}}_VAR_NO_INIT_UNSPECIFIED
+#define RTE_STOP_SEC_{{appl_name.upper()}}_PRIVATE_BSS
 #include "rte_memmap.h"
     {%- endif %}
 {#- private zero init #}
@@ -1574,15 +1552,15 @@ VAR(uint8, RTE_PRIVATE_{{appl_name.upper()}}_VAR_NO_INIT) Rte_ioc_Rte_M_{{swc_na
         {%- else %}
         {%- set ns.counter = ns.counter + 1 %}
             {%- if ns.counter == 1 %}
-#define RTE_START_SEC_PRIVATE_{{appl_name.upper()}}_VAR_ZERO_INIT_UNSPECIFIED
+#define RTE_START_SEC_{{appl_name.upper()}}_PRIVATE_DATA
 #include "rte_memmap.h"
             {%- endif %}
-VAR(uint8, RTE_PRIVATE_{{appl_name.upper()}}_VAR_ZERO_INIT) Rte_ioc_Rte_M_{{swc_name}}_{{port_name}}_{{mode_group_prototype_name}}_tail;
-VAR(uint8, RTE_PRIVATE_{{appl_name.upper()}}_VAR_ZERO_INIT) Rte_ioc_Rte_M_{{swc_name}}_{{port_name}}_{{mode_group_prototype_name}}_head;
+VAR(uint8, RTE_{{appl_name.upper()}}_PRIVATE_DATA) Rte_ioc_Rte_M_{{swc_name}}_{{port_name}}_{{mode_group_prototype_name}}_tail;
+VAR(uint8, RTE_{{appl_name.upper()}}_PRIVATE_DATA) Rte_ioc_Rte_M_{{swc_name}}_{{port_name}}_{{mode_group_prototype_name}}_head;
         {%- endif %}
     {%- endfor %}
     {%- if ns.counter > 0 %}
-#define RTE_STOP_SEC_PRIVATE_{{appl_name.upper()}}_VAR_ZERO_INIT_UNSPECIFIED
+#define RTE_STOP_SEC_{{appl_name.upper()}}_PRIVATE_DATA
 #include "rte_memmap.h"
     {%- endif %}
 {%- endif %}
@@ -1603,14 +1581,14 @@ VAR(uint8, RTE_PRIVATE_{{appl_name.upper()}}_VAR_ZERO_INIT) Rte_ioc_Rte_M_{{swc_
         {%- if not inter_partition and osapplication == appl_name %}
         {%- set ns.counter = ns.counter + 1 %}
             {%- if ns.counter == 1 %}
-#define RTE_START_SEC_PRIVATE_{{appl_name.upper()}}_VAR_INIT_UNSPECIFIED
+#define RTE_START_SEC_{{appl_name.upper()}}_PRIVATE_DATA
 #include "rte_memmap.h"
             {%- endif %}
-VAR(uint8, RTE_PRIVATE_{{appl_name.upper()}}_VAR_INIT) Rte_ModeMachine_{{swc_name}}_{{port_name}}_{{mode_group_prototype_name}} = RTE_MODE_{{mode_switch_pport["swc_name"]}}_{{mode_switch_pport["mode_group"]}}_{{mode_switch_pport["init_mode"]}};
+VAR(uint8, RTE_{{appl_name.upper()}}_PRIVATE_DATA) Rte_ModeMachine_{{swc_name}}_{{port_name}}_{{mode_group_prototype_name}} = RTE_MODE_{{mode_switch_pport["swc_name"]}}_{{mode_switch_pport["mode_group"]}}_{{mode_switch_pport["init_mode"]}};
         {%- endif %}
     {%- endfor %}
     {%- if ns.counter > 0 %}
-#define RTE_STOP_SEC_PRIVATE_{{appl_name.upper()}}_VAR_INIT_UNSPECIFIED
+#define RTE_STOP_SEC_{{appl_name.upper()}}_PRIVATE_DATA
 #include "rte_memmap.h"
     {%- endif %}
 {#- inter partition #}
@@ -1620,10 +1598,10 @@ VAR(uint8, RTE_PRIVATE_{{appl_name.upper()}}_VAR_INIT) Rte_ModeMachine_{{swc_nam
     {%- set mode_group_prototype_name = mode_switch_pport["mode_group_prototype"] %}
     {%- set inter_partition = mode_switch_pport["inter_partition"] %}
         {%- if inter_partition %}
-#define RTE_START_SEC_{{mode_switch_pport['infix']['mem_mode_machine'].upper()}}_INIT_UNSPECIFIED
+#define RTE_START_SEC_{{mode_switch_pport['infix']['mem_mode_machine'].upper()}}_DATA
 #include "rte_memmap.h"
-VAR(uint8, RTE_{{mode_switch_pport['infix']['mem_mode_machine'].upper()}}_INIT) Rte_ModeMachine_{{swc_name}}_{{port_name}}_{{mode_group_prototype_name}} = RTE_MODE_{{mode_switch_pport["swc_name"]}}_{{mode_switch_pport["mode_group"]}}_{{mode_switch_pport["init_mode"]}};
-#define RTE_STOP_SEC_{{mode_switch_pport['infix']['mem_mode_machine'].upper()}}_INIT_UNSPECIFIED
+VAR(uint8, RTE_{{mode_switch_pport['infix']['mem_mode_machine'].upper()}}_DATA) Rte_ModeMachine_{{swc_name}}_{{port_name}}_{{mode_group_prototype_name}} = RTE_MODE_{{mode_switch_pport["swc_name"]}}_{{mode_switch_pport["mode_group"]}}_{{mode_switch_pport["init_mode"]}};
+#define RTE_STOP_SEC_{{mode_switch_pport['infix']['mem_mode_machine'].upper()}}_DATA
 #include "rte_memmap.h"
         {%- endif %}
     {%- endfor %}
@@ -1642,7 +1620,7 @@ VAR(uint8, RTE_{{mode_switch_pport['infix']['mem_mode_machine'].upper()}}_INIT) 
 #define RTE_MODE_TRANSITION_{{mode_switch_pport["swc_name"].upper()}}_{{mode_switch_pport["port_name"].upper()}}_{{mode_switch_pport["mode_group_prototype"].upper()}}_{{transition_event["previous_mode"]["name"].upper()}}_{{transition_event["next_mode"]["name"].upper()}} {{loop.index}}
     {%- endfor %}
     {%- if mode_switch_pport["on_transition_mode"] > 0 and transition_events|length %}
-#define RTE_START_SEC_CONST_UNSPECIFIED
+#define RTE_START_SEC_CONST
 #include "rte_memmap.h"
 CONST(uint8, RTE_CONST) Rte_ModeTransitionEventId_{{swc_name}}_{{port_name}}_{{mode_group_prototype_name}}[{{mode_switch_pport["mode_group_len"]}}][{{mode_switch_pport["mode_group_len"]}}] =
 {
@@ -1661,7 +1639,7 @@ CONST(uint8, RTE_CONST) Rte_ModeTransitionEventId_{{swc_name}}_{{port_name}}_{{m
     },
     {%- endfor %}
 };
-#define RTE_STOP_SEC_CONST_UNSPECIFIED
+#define RTE_STOP_SEC_CONST
 #include "rte_memmap.h"
     {%- endif %}
     {%- endif %}
@@ -1670,12 +1648,12 @@ CONST(uint8, RTE_CONST) Rte_ModeTransitionEventId_{{swc_name}}_{{port_name}}_{{m
 
 {%- set pports = get_all_mode_disabled_pports(appl_name) %}
 {%- if pports %}
-#define RTE_START_SEC_{{pports[0]['infix']['mem_mode_dis_trig'].upper()}}_INIT_UNSPECIFIED
+#define RTE_START_SEC_{{pports[0]['infix']['mem_mode_dis_trig'].upper()}}_DATA
 #include "rte_memmap.h"
 /*
  * RTE mode disabled entity flags
  */
-VAR(Rte_Flag_ModeDisableTrigger_{{appl_name}}_Type, RTE_{{pports[0]['infix']['mem_mode_dis_trig'].upper()}}_INIT) Rte_Flag_ModeDisableTrigger_{{appl_name}} = {
+VAR(Rte_Flag_ModeDisableTrigger_{{appl_name}}_Type, RTE_{{pports[0]['infix']['mem_mode_dis_trig'].upper()}}_DATA) Rte_Flag_ModeDisableTrigger_{{appl_name}} = {
 {%- for pport in pports %}
     {%- for swc_run, entity_info in pport["mode_disabled_flag"].items() %}
         {%- if pport["init_mode"] in entity_info["disabled_mode"] %}
@@ -1686,7 +1664,7 @@ VAR(Rte_Flag_ModeDisableTrigger_{{appl_name}}_Type, RTE_{{pports[0]['infix']['me
     {%- endfor %}
 {%- endfor %}
 };
-#define RTE_STOP_SEC_{{pports[0]['infix']['mem_mode_dis_trig'].upper()}}_INIT_UNSPECIFIED
+#define RTE_STOP_SEC_{{pports[0]['infix']['mem_mode_dis_trig'].upper()}}_DATA
 #include "rte_memmap.h"
 
 {%- endif %}
@@ -1704,7 +1682,7 @@ VAR(Rte_Flag_ModeDisableTrigger_{{appl_name}}_Type, RTE_{{pports[0]['infix']['me
         {%- if exit_events | length %}
 #define RTE_START_SEC_CODE
 #include "rte_memmap.h"
-EventMaskType GetModeEntryEventMask_{{swc_name}}_{{port_name}}_{{mode_group_prototype_name}}(uint8 mode)
+EventMaskType Rte_GetModeExitEventMask_{{swc_name}}_{{port_name}}_{{mode_group_prototype_name}}(uint8 mode)
 {
     EventMaskType eventMask;
     switch (mode)
@@ -1727,7 +1705,7 @@ EventMaskType GetModeEntryEventMask_{{swc_name}}_{{port_name}}_{{mode_group_prot
         {%- if entry_events | length %}
 #define RTE_START_SEC_CODE
 #include "rte_memmap.h"
-EventMaskType GetModeEntryEventMask_{{swc_name}}_{{port_name}}_{{mode_group_prototype_name}}(uint8 mode)
+EventMaskType Rte_GetModeEntryEventMask_{{swc_name}}_{{port_name}}_{{mode_group_prototype_name}}(uint8 mode)
 {
     EventMaskType eventMask;
     switch (mode)
@@ -1749,7 +1727,7 @@ EventMaskType GetModeEntryEventMask_{{swc_name}}_{{port_name}}_{{mode_group_prot
         {%- if transition_events | length %}
 #define RTE_START_SEC_CODE
 #include "rte_memmap.h"
-EventMaskType GetModeTransitionEventMask_{{swc_name}}_{{port_name}}_{{mode_group_prototype_name}}(uint8 transition)
+EventMaskType Rte_GetModeTransitionEventMask_{{swc_name}}_{{port_name}}_{{mode_group_prototype_name}}(uint8 transition)
 {
     EventMaskType eventMask;
     switch (transition)
@@ -1779,39 +1757,39 @@ EventMaskType GetModeTransitionEventMask_{{swc_name}}_{{port_name}}_{{mode_group
 {%- set imp_copys = get_osa_irv_var_imp_copy(appl_name) %}
 {%- if vars %}
 {# non-zero init value #}
-#define RTE_START_SEC_PRIVATE_{{appl_name.upper()}}_VAR_INIT_UNSPECIFIED
+#define RTE_START_SEC_{{appl_name.upper()}}_PRIVATE_DATA
 #include "rte_memmap.h"
     {%- for irv in vars %}
-    {%- set init_value, is_zero, is_bool = get_sr_var_init_value(irv["datatype"], irv["init_value"]) %}
+    {%- set init_value, is_zero, is_bool = get_sr_DATA_value(irv["datatype"], irv["init_value"]) %}
         {%- if not is_zero %}
-VAR({{irv["datatype"]["name"]}}, RTE_PRIVATE_{{appl_name.upper()}}_VAR_INIT) {{irv["buff"]}} = {{init_value}};
+VAR({{irv["datatype"]["name"]}}, RTE_{{appl_name.upper()}}_PRIVATE_DATA) {{irv["buff"]}} = {{init_value}};
         {%- endif %}
     {%- endfor %}
-#define RTE_STOP_SEC_PRIVATE_{{appl_name.upper()}}_VAR_INIT_UNSPECIFIED
+#define RTE_STOP_SEC_{{appl_name.upper()}}_PRIVATE_DATA
 #include "rte_memmap.h"
 {# zero init value #}
-#define RTE_START_SEC_PRIVATE_{{appl_name.upper()}}_VAR_ZERO_INIT_UNSPECIFIED
+#define RTE_START_SEC_{{appl_name.upper()}}_PRIVATE_DATA
 #include "rte_memmap.h"
     {%- for irv in vars %}
-    {%- set init_value, is_zero, is_bool = get_sr_var_init_value(irv["datatype"], irv["init_value"]) %}
+    {%- set init_value, is_zero, is_bool = get_sr_DATA_value(irv["datatype"], irv["init_value"]) %}
         {%- if is_zero %}
-VAR({{irv["datatype"]["name"]}}, RTE_PRIVATE_{{appl_name.upper()}}_VAR_ZERO_INIT) {{irv["buff"]}};
+VAR({{irv["datatype"]["name"]}}, RTE_{{appl_name.upper()}}_PRIVATE_DATA) {{irv["buff"]}};
         {%- endif %}
     {%- endfor %}
-#define RTE_STOP_SEC_PRIVATE_{{appl_name.upper()}}_VAR_ZERO_INIT_UNSPECIFIED
+#define RTE_STOP_SEC_{{appl_name.upper()}}_PRIVATE_DATA
 #include "rte_memmap.h"
 {%- endif %}
 
 {%- if vars_no_init_value or imp_copys %}
-#define RTE_START_SEC_PRIVATE_{{appl_name.upper()}}_VAR_NO_INIT_UNSPECIFIED
+#define RTE_START_SEC_{{appl_name.upper()}}_PRIVATE_BSS
 #include "rte_memmap.h"
     {%- for irv in vars_no_init_value %}
-VAR({{irv["datatype"]["name"]}}, RTE_PRIVATE_{{appl_name.upper()}}_VAR_NO_INIT) {{irv["buff"]}};
+VAR({{irv["datatype"]["name"]}}, RTE_{{appl_name.upper()}}_PRIVATE_BSS) {{irv["buff"]}};
     {%- endfor %}
     {%- for access in imp_copys %}
-VAR({{access["data"]["datatype"]["name"]}}, RTE_PRIVATE_{{appl_name.upper()}}_VAR_NO_INIT) {{access["buff_imp_copy"]}};
+VAR({{access["data"]["datatype"]["name"]}}, RTE_{{appl_name.upper()}}_PRIVATE_BSS) {{access["buff_imp_copy"]}};
     {%- endfor %}
-#define RTE_STOP_SEC_PRIVATE_{{appl_name.upper()}}_VAR_NO_INIT_UNSPECIFIED
+#define RTE_STOP_SEC_{{appl_name.upper()}}_PRIVATE_BSS
 #include "rte_memmap.h"
 {%- endif %}
 
@@ -1822,35 +1800,35 @@ VAR({{access["data"]["datatype"]["name"]}}, RTE_PRIVATE_{{appl_name.upper()}}_VA
 {%- set vars, vars_no_init_value = get_osa_pim_var(appl_name) %}
 {%- if vars %}
 {# non-zero init value #}
-#define RTE_START_SEC_PRIVATE_{{appl_name.upper()}}_VAR_INIT_UNSPECIFIED
+#define RTE_START_SEC_{{appl_name.upper()}}_PRIVATE_DATA
 #include "rte_memmap.h"
     {%- for pim in vars %}
-    {%- set init_value, is_zero, is_bool = get_sr_var_init_value(pim["datatype"], pim["init_value"]) %}
+    {%- set init_value, is_zero, is_bool = get_sr_DATA_value(pim["datatype"], pim["init_value"]) %}
         {%- if not is_zero %}
-VAR({{pim["buff_type"]}}, RTE_PRIVATE_{{appl_name.upper()}}_VAR_INIT) {{pim["buff"]}} = {{init_value}};
+VAR({{pim["buff_type"]}}, RTE_{{appl_name.upper()}}_PRIVATE_DATA) {{pim["buff"]}} = {{init_value}};
         {%- endif %}
     {%- endfor %}
-#define RTE_STOP_SEC_PRIVATE_{{appl_name.upper()}}_VAR_INIT_UNSPECIFIED
+#define RTE_STOP_SEC_{{appl_name.upper()}}_PRIVATE_DATA
 #include "rte_memmap.h"
 {# zero init value #}
-#define RTE_START_SEC_PRIVATE_{{appl_name.upper()}}_VAR_ZERO_INIT_UNSPECIFIED
+#define RTE_START_SEC_{{appl_name.upper()}}_PRIVATE_DATA
 #include "rte_memmap.h"
     {%- for pim in vars %}
-    {%- set init_value, is_zero, is_bool = get_sr_var_init_value(pim["datatype"], pim["init_value"]) %}
+    {%- set init_value, is_zero, is_bool = get_sr_DATA_value(pim["datatype"], pim["init_value"]) %}
         {%- if is_zero %}
-VAR({{pim["buff_type"]}}, RTE_PRIVATE_{{appl_name.upper()}}_VAR_ZERO_INIT) {{pim["buff"]}};
+VAR({{pim["buff_type"]}}, RTE_{{appl_name.upper()}}_PRIVATE_DATA) {{pim["buff"]}};
         {%- endif %}
     {%- endfor %}
-#define RTE_STOP_SEC_PRIVATE_{{appl_name.upper()}}_VAR_ZERO_INIT_UNSPECIFIED
+#define RTE_STOP_SEC_{{appl_name.upper()}}_PRIVATE_DATA
 #include "rte_memmap.h"
 {%- endif %}
 {%- if vars_no_init_value %}
-#define RTE_START_SEC_PRIVATE_{{appl_name.upper()}}_VAR_NO_INIT_UNSPECIFIED
+#define RTE_START_SEC_{{appl_name.upper()}}_PRIVATE_BSS
 #include "rte_memmap.h"
     {%- for pim in vars_no_init_value %}
-VAR({{pim["buff_type"]}}, RTE_PRIVATE_{{appl_name.upper()}}_VAR_NO_INIT) {{pim["buff"]}};
+VAR({{pim["buff_type"]}}, RTE_{{appl_name.upper()}}_PRIVATE_BSS) {{pim["buff"]}};
     {%- endfor %}
-#define RTE_STOP_SEC_PRIVATE_{{appl_name.upper()}}_VAR_NO_INIT_UNSPECIFIED
+#define RTE_STOP_SEC_{{appl_name.upper()}}_PRIVATE_BSS
 #include "rte_memmap.h"
 {%- endif %}
 
@@ -1861,7 +1839,7 @@ VAR({{pim["buff_type"]}}, RTE_PRIVATE_{{appl_name.upper()}}_VAR_NO_INIT) {{pim["
 {#- data buffers #}
 {%- for infix, vars in get_sr_dm_buff(appl_name).items() %}
 {%- set infix_upper = infix.upper() %}
-#define RTE_START_SEC_{{infix_upper}}_UNSPECIFIED
+#define RTE_START_SEC_{{infix_upper}}
 #include "rte_memmap.h"
     {%- for var in vars %}
         {%- if var["init_value_all_zero"] %}
@@ -1870,39 +1848,39 @@ VAR({{var["datatype"]["name"]}}, RTE_{{infix_upper}}) {{var["name"]}};
 VAR({{var["datatype"]["name"]}}, RTE_{{infix_upper}}) {{var["name"]}} = {{var["init_value_str"]}};
         {%- endif %}
     {%- endfor %}
-#define RTE_STOP_SEC_{{infix_upper}}_UNSPECIFIED
+#define RTE_STOP_SEC_{{infix_upper}}
 #include "rte_memmap.h"
 {%- endfor %}
 
 {%- for infix, vars in get_sr_dm_buff_last(appl_name).items() %}
 {%- set infix_upper = infix.upper() %}
-#define RTE_START_SEC_{{infix_upper}}_UNSPECIFIED
+#define RTE_START_SEC_{{infix_upper}}
 #include "rte_memmap.h"
     {%- for var in vars %}
 VAR({{var["datatype"]["name"]}}, RTE_{{infix_upper}}) {{var["name"]}};
     {%- endfor %}
-#define RTE_STOP_SEC_{{infix_upper}}_UNSPECIFIED
+#define RTE_STOP_SEC_{{infix_upper}}
 #include "rte_memmap.h"
 {%- endfor %}
 
 {%- for infix, vars in get_sr_dm_buff_status(appl_name).items() %}
 {%- set infix_upper = infix.upper() %}
-#define RTE_START_SEC_{{infix_upper}}_UNSPECIFIED
+#define RTE_START_SEC_{{infix_upper}}
 #include "rte_memmap.h"
     {%- for var in vars %}
 VAR(uint8, RTE_{{infix_upper}}) {{var["name"]}};
     {%- endfor %}
-#define RTE_STOP_SEC_{{infix_upper}}_UNSPECIFIED
+#define RTE_STOP_SEC_{{infix_upper}}
 #include "rte_memmap.h"
 {%- endfor %}
 
 {#- flags #}
 {%- macro sr_dm_flag_def(parent_struct_name, infix, init) %}
 {%- set infix_upper = infix.upper() %}
-#define RTE_START_SEC_{{infix_upper}}_UNSPECIFIED
+#define RTE_START_SEC_{{infix_upper}}
 #include "rte_memmap.h"
 VAR({{parent_struct_name}}_Type, RTE_{{infix_upper}}) {{parent_struct_name}}{{init}};
-#define RTE_STOP_SEC_{{infix_upper}}_UNSPECIFIED
+#define RTE_STOP_SEC_{{infix_upper}}
 #include "rte_memmap.h"
 {%- endmacro %}
 
@@ -1996,24 +1974,24 @@ Std_ReturnType Rte_IccSend_Rte_M_{{swc_name}}_{{port_name}}_{{mode_group_prototy
     {%- endif %}
 {%- else %}
     {%- if queue_length == 1 %}
-Std_ReturnType Rte_IccSend_Rte_M_{{swc_name}}_{{port_name}}_{{mode_group_prototype_name}}(const uint8 data0);
+Std_ReturnType Rte_IccSend_Rte_M_{{swc_name}}_{{port_name}}_{{mode_group_prototype_name}}(const uint8 data0)
 {
     return RTE_E_OK;
 }
-Std_ReturnType Rte_IccReceive_Rte_M_{{swc_name}}_{{port_name}}_{{mode_group_prototype_name}}(uint8 *data0);
+Std_ReturnType Rte_IccReceive_Rte_M_{{swc_name}}_{{port_name}}_{{mode_group_prototype_name}}(uint8 *data0)
 {
     return RTE_E_OK;
 }
     {%- elif queue_length > 1 %}
-Std_ReturnType Rte_IccSend_Rte_M_{{swc_name}}_{{port_name}}_{{mode_group_prototype_name}}(const uint8 data0);
+Std_ReturnType Rte_IccSend_Rte_M_{{swc_name}}_{{port_name}}_{{mode_group_prototype_name}}(const uint8 data0)
 {
     return RTE_E_OK;
 }
-Std_ReturnType Rte_IccReceive_Rte_M_{{swc_name}}_{{port_name}}_{{mode_group_prototype_name}}(uint8 *data0);
+Std_ReturnType Rte_IccReceive_Rte_M_{{swc_name}}_{{port_name}}_{{mode_group_prototype_name}}(uint8 *data0)
 {
     return RTE_E_OK;
 }
-Std_ReturnType Rte_IccPeek_Rte_M_{{swc_name}}_{{port_name}}_{{mode_group_prototype_name}}(uint8 *data0);
+Std_ReturnType Rte_IccPeek_Rte_M_{{swc_name}}_{{port_name}}_{{mode_group_prototype_name}}(uint8 *data0)
 {
     return RTE_E_OK;
 }
@@ -2069,6 +2047,8 @@ FUNC(Std_ReturnType,RTE_CODE) Rte_Switch_{{swc_name}}_{{port_name}}_{{mode_group
 {%- set mode_group_prototype_name = mode_switch_pport["mode_group_prototype"] %}
 {%- set connected_osapplication = mode_switch_pport["connected_osapplication"] %}
 {%- set inter_partition = mode_switch_pport["inter_partition"] %}
+{%- set if_use_internal_index_current_mode = mode_switch_pport["if_use_internal_index_current_mode"] %}
+{%- set if_use_current_mode = mode_switch_pport["if_use_current_mode"] %}
 FUNC(Std_ReturnType,RTE_CODE) Rte_Switch_{{swc_name}}_{{port_name}}_{{mode_group_prototype_name}}(uint8 nextMode)
 {
     Std_ReturnType operationResult = RTE_E_OK;
@@ -2154,13 +2134,13 @@ static FUNC(void, RTE_CODE) Rte_DeActivateModeDisabling_{{pport["osapplication"]
 {{indent}}Rte_DisableOSInterrupts();
 {%- elif rport_data["lock"] == "SPINLOCK" %}
 #if (RTE_DLOG_ENABLED == STD_ON)
-{{indent}}ret = GetSpinlock{{rport_data["spinlock_api_postfix"]}}((SpinlockIdType)OS_SPINLOCK_{{rport_data["lock_id"]}}_ID);
+{{indent}}ret = GetSpinlock{{rport_data["spinlock_api_postfix"]}}((SpinlockIdType)OS_SPINLOCK_{{rport_data["lock_id"].upper()}}_ID);
 {{indent}}if (ret != E_OK)
 {{indent}}{
-{{indent}}    Rte_LogOs(RTE_TASK_SERVICE_ID, OS_TASK_{{task_name}}_ID, OSServiceId_GetSpinlock, OS_SPINLOCK_{{rport_data["lock_id"]}}_ID, ret);
+{{indent}}    Rte_LogOs(RTE_TASK_SERVICE_ID, OS_TASK_{{task_name}}_ID, OSServiceId_GetSpinlock, OS_SPINLOCK_{{rport_data["lock_id"].upper()}}_ID, ret);
 {{indent}}}
 #else
-{{indent}}(void)GetSpinlock{{rport_data["spinlock_api_postfix"]}}((SpinlockIdType)OS_SPINLOCK_{{rport_data["lock_id"]}}_ID);
+{{indent}}(void)GetSpinlock{{rport_data["spinlock_api_postfix"]}}((SpinlockIdType)OS_SPINLOCK_{{rport_data["lock_id"].upper()}}_ID);
 #endif
 {%- endif %}
 
@@ -2226,13 +2206,13 @@ static FUNC(void, RTE_CODE) Rte_DeActivateModeDisabling_{{pport["osapplication"]
 {{indent}}Rte_EnableOSInterrupts();
 {%- elif rport_data["lock"] == "SPINLOCK" %}
 #if (RTE_DLOG_ENABLED == STD_ON)
-{{indent}}ret = ReleaseSpinlock{{rport_data["spinlock_api_postfix"]}}((SpinlockIdType)OS_SPINLOCK_{{rport_data["lock_id"]}}_ID);
+{{indent}}ret = ReleaseSpinlock{{rport_data["spinlock_api_postfix"]}}((SpinlockIdType)OS_SPINLOCK_{{rport_data["lock_id"].upper()}}_ID);
 {{indent}}if (ret != E_OK)
 {{indent}}{
-{{indent}}    Rte_LogOs(RTE_TASK_SERVICE_ID, OS_TASK_{{task_name}}_ID, OSServiceId_ReleaseSpinlock, OS_SPINLOCK_{{rport_data["lock_id"]}}_ID, ret);
+{{indent}}    Rte_LogOs(RTE_TASK_SERVICE_ID, OS_TASK_{{task_name}}_ID, OSServiceId_ReleaseSpinlock, OS_SPINLOCK_{{rport_data["lock_id"].upper()}}_ID, ret);
 {{indent}}}
 #else
-{{indent}}(void)ReleaseSpinlock{{rport_data["spinlock_api_postfix"]}}((SpinlockIdType)OS_SPINLOCK_{{rport_data["lock_id"]}}_ID);
+{{indent}}(void)ReleaseSpinlock{{rport_data["spinlock_api_postfix"]}}((SpinlockIdType)OS_SPINLOCK_{{rport_data["lock_id"].upper()}}_ID);
 #endif
 {%- endif %}
 
@@ -2273,13 +2253,13 @@ static FUNC(void, RTE_CODE) Rte_DeActivateModeDisabling_{{pport["osapplication"]
 {{indent}}Rte_EnableOSInterrupts();
 {%- elif rport_data["lock"] == "SPINLOCK" %}
 #if (RTE_DLOG_ENABLED == STD_ON)
-{{indent}}ret = GetSpinlock{{rport_data["spinlock_api_postfix"]}}((SpinlockIdType)OS_SPINLOCK_{{rport_data["variable_name"]}}_ID);
+{{indent}}ret = GetSpinlock{{rport_data["spinlock_api_postfix"]}}((SpinlockIdType)OS_SPINLOCK_{{rport_data["variable_name"].upper()}}_ID);
 {{indent}}if (ret != E_OK)
 {{indent}}{
-{{indent}}    Rte_LogOs(RTE_TASK_SERVICE_ID, OS_TASK_{{task_name}}_ID, OSServiceId_GetSpinlock, OS_SPINLOCK_{{rport_data["variable_name"]}}_ID, ret);
+{{indent}}    Rte_LogOs(RTE_TASK_SERVICE_ID, OS_TASK_{{task_name}}_ID, OSServiceId_GetSpinlock, OS_SPINLOCK_{{rport_data["variable_name"].upper()}}_ID, ret);
 {{indent}}}
 #else
-{{indent}}(void)GetSpinlock{{rport_data["spinlock_api_postfix"]}}((SpinlockIdType)OS_SPINLOCK_{{rport_data["variable_name"]}}_ID);
+{{indent}}(void)GetSpinlock{{rport_data["spinlock_api_postfix"]}}((SpinlockIdType)OS_SPINLOCK_{{rport_data["variable_name"].upper()}}_ID);
 #endif
     {%- if rport_data["data_category"] == "NUMERICAL" %}
         {%- if rport_data.get("buff_struct_name", None) %}
@@ -2291,13 +2271,13 @@ static FUNC(void, RTE_CODE) Rte_DeActivateModeDisabling_{{pport["osapplication"]
 {{indent}}Rte_MemCpy(&{{output_buff}}, &{{rport_data["variable_name"]}}, sizeof({{rport_data["data_type"]["name"]}}));
     {%- endif %}
 #if (RTE_DLOG_ENABLED == STD_ON)
-{{indent}}ret = ReleaseSpinlock{{rport_data["spinlock_api_postfix"]}}((SpinlockIdType)OS_SPINLOCK_{{rport_data["variable_name"]}}_ID);
+{{indent}}ret = ReleaseSpinlock{{rport_data["spinlock_api_postfix"]}}((SpinlockIdType)OS_SPINLOCK_{{rport_data["variable_name"].upper()}}_ID);
 {{indent}}if (ret != E_OK)
 {{indent}}{
-{{indent}}    Rte_LogOs(RTE_TASK_SERVICE_ID, OS_TASK_{{task_name}}_ID, OSServiceId_ReleaseSpinlock, OS_SPINLOCK_{{rport_data["variable_name"]}}_ID, ret);
+{{indent}}    Rte_LogOs(RTE_TASK_SERVICE_ID, OS_TASK_{{task_name}}_ID, OSServiceId_ReleaseSpinlock, OS_SPINLOCK_{{rport_data["variable_name"].upper()}}_ID, ret);
 {{indent}}}
 #else
-{{indent}}(void)ReleaseSpinlock{{rport_data["spinlock_api_postfix"]}}((SpinlockIdType)OS_SPINLOCK_{{rport_data["variable_name"]}}_ID);
+{{indent}}(void)ReleaseSpinlock{{rport_data["spinlock_api_postfix"]}}((SpinlockIdType)OS_SPINLOCK_{{rport_data["variable_name"].upper()}}_ID);
 #endif
 {%- endif %}
 {%- endif %}
@@ -2346,14 +2326,14 @@ static FUNC(void, RTE_CODE) Rte_DeActivateModeDisabling_{{pport["osapplication"]
 {{indent}}Rte_EnableOSInterrupts();
 {%- elif pport_data["lock"] == "SPINLOCK" %}
 #if (RTE_DLOG_ENABLED == STD_ON)
-{{indent}}ret = GetSpinlock{{pport_data["spinlock_api_postfix"]}}((SpinlockIdType)OS_SPINLOCK_{{pport_data["lock_id"]}}_ID);
+{{indent}}ret = GetSpinlock{{pport_data["spinlock_api_postfix"]}}((SpinlockIdType)OS_SPINLOCK_{{pport_data["lock_id"].upper()}}_ID);
 {{indent}}if (ret != E_OK)
 {{indent}}{
-{{indent}}    Rte_LogOs(RTE_TASK_SERVICE_ID, OS_TASK_{{task_name}}_ID, OSServiceId_GetSpinlock, OS_SPINLOCK_{{pport_data["lock_id"]}}_ID, ret);
+{{indent}}    Rte_LogOs(RTE_TASK_SERVICE_ID, OS_TASK_{{task_name}}_ID, OSServiceId_GetSpinlock, OS_SPINLOCK_{{pport_data["lock_id"].upper()}}_ID, ret);
 {{indent}}}
 #else
     (void) TerminateTask();
-{{indent}}(void)GetSpinlock{{pport_data["spinlock_api_postfix"]}}((SpinlockIdType)OS_SPINLOCK_{{pport_data["lock_id"]}}_ID);
+{{indent}}(void)GetSpinlock{{pport_data["spinlock_api_postfix"]}}((SpinlockIdType)OS_SPINLOCK_{{pport_data["lock_id"].upper()}}_ID);
 #endif
     {%- if pport_data["data_category"] == "NUMERICAL" %}
         {%- if pport_data['sender_buff_struct_name'] and pport_data['sender_buff_struct_name'][0] %}
@@ -2367,13 +2347,13 @@ static FUNC(void, RTE_CODE) Rte_DeActivateModeDisabling_{{pport["osapplication"]
 {{indent}}{{pport_data["global_counter"]}}++;
 {{indent}}{{pport_data["local_counter"]}} = {{pport_data["global_counter"]}};
 #if (RTE_DLOG_ENABLED == STD_ON)
-{{indent}}ret = ReleaseSpinlock{{pport_data["spinlock_api_postfix"]}}((SpinlockIdType)OS_SPINLOCK_{{pport_data["lock_id"]}}_ID);
+{{indent}}ret = ReleaseSpinlock{{pport_data["spinlock_api_postfix"]}}((SpinlockIdType)OS_SPINLOCK_{{pport_data["lock_id"].upper()}}_ID);
 {{indent}}if (ret != E_OK)
 {{indent}}{
-{{indent}}    Rte_LogOs(RTE_TASK_SERVICE_ID, OS_TASK_{{task_name}}_ID, OSServiceId_ReleaseSpinlock, OS_SPINLOCK_{{pport_data["lock_id"]}}_ID, ret);
+{{indent}}    Rte_LogOs(RTE_TASK_SERVICE_ID, OS_TASK_{{task_name}}_ID, OSServiceId_ReleaseSpinlock, OS_SPINLOCK_{{pport_data["lock_id"].upper()}}_ID, ret);
 {{indent}}}
 #else
-{{indent}}(void)ReleaseSpinlock{{pport_data["spinlock_api_postfix"]}}((SpinlockIdType)OS_SPINLOCK_{{pport_data["lock_id"]}}_ID);
+{{indent}}(void)ReleaseSpinlock{{pport_data["spinlock_api_postfix"]}}((SpinlockIdType)OS_SPINLOCK_{{pport_data["lock_id"].upper()}}_ID);
 #endif
 {%- endif %}
 {%- else %}
@@ -2403,13 +2383,13 @@ static FUNC(void, RTE_CODE) Rte_DeActivateModeDisabling_{{pport["osapplication"]
 {{indent}}Rte_EnableOSInterrupts();
 {%- elif pport_data["lock"] == "SPINLOCK" %}
 #if (RTE_DLOG_ENABLED == STD_ON)
-{{indent}}ret = GetSpinlock{{pport_data["spinlock_api_postfix"]}}((SpinlockIdType)OS_SPINLOCK_{{pport_data["variable_name"]}}_ID);
+{{indent}}ret = GetSpinlock{{pport_data["spinlock_api_postfix"]}}((SpinlockIdType)OS_SPINLOCK_{{pport_data["variable_name"].upper()}}_ID);
 {{indent}}if (ret != E_OK)
 {{indent}}{
-{{indent}}    Rte_LogOs(RTE_TASK_SERVICE_ID, OS_TASK_{{task_name}}_ID, OSServiceId_GetSpinlock, OS_SPINLOCK_{{pport_data["variable_name"]}}_ID, ret);
+{{indent}}    Rte_LogOs(RTE_TASK_SERVICE_ID, OS_TASK_{{task_name}}_ID, OSServiceId_GetSpinlock, OS_SPINLOCK_{{pport_data["variable_name"].upper()}}_ID, ret);
 {{indent}}}
 #else
-{{indent}}(void)GetSpinlock{{pport_data["spinlock_api_postfix"]}}((SpinlockIdType)OS_SPINLOCK_{{pport_data["variable_name"]}}_ID);
+{{indent}}(void)GetSpinlock{{pport_data["spinlock_api_postfix"]}}((SpinlockIdType)OS_SPINLOCK_{{pport_data["variable_name"].upper()}}_ID);
 #endif
     {%- if pport_data["data_category"] == "NUMERICAL" %}
         {%- if pport_data.get("buff_struct_name", None) %}
@@ -2421,13 +2401,13 @@ static FUNC(void, RTE_CODE) Rte_DeActivateModeDisabling_{{pport["osapplication"]
 {{indent}}Rte_MemCpy(&{{pport_data["variable_name"]}}, {{input_buff}}, sizeof({{pport_data["data_type"]["name"]}}));
     {%- endif %}
 #if (RTE_DLOG_ENABLED == STD_ON)
-{{indent}}ret = ReleaseSpinlock{{pport_data["spinlock_api_postfix"]}}((SpinlockIdType)OS_SPINLOCK_{{pport_data["variable_name"]}}_ID);
+{{indent}}ret = ReleaseSpinlock{{pport_data["spinlock_api_postfix"]}}((SpinlockIdType)OS_SPINLOCK_{{pport_data["variable_name"].upper()}}_ID);
 {{indent}}if (ret != E_OK)
 {{indent}}{
-{{indent}}    Rte_LogOs(RTE_TASK_SERVICE_ID, OS_TASK_{{task_name}}_ID, OSServiceId_ReleaseSpinlock, OS_SPINLOCK_{{pport_data["variable_name"]}}_ID, ret);
+{{indent}}    Rte_LogOs(RTE_TASK_SERVICE_ID, OS_TASK_{{task_name}}_ID, OSServiceId_ReleaseSpinlock, OS_SPINLOCK_{{pport_data["variable_name"].upper()}}_ID, ret);
 {{indent}}}
 #else
-{{indent}}(void)ReleaseSpinlock{{pport_data["spinlock_api_postfix"]}}((SpinlockIdType)OS_SPINLOCK_{{pport_data["variable_name"]}}_ID);
+{{indent}}(void)ReleaseSpinlock{{pport_data["spinlock_api_postfix"]}}((SpinlockIdType)OS_SPINLOCK_{{pport_data["variable_name"].upper()}}_ID);
 #endif
 {%- endif %}
 {%- endif %}
@@ -2435,22 +2415,22 @@ static FUNC(void, RTE_CODE) Rte_DeActivateModeDisabling_{{pport["osapplication"]
 {#- ===== END intra ecu sr ===== #}
 {#- ===== START inter ecu com ===== #}
 {%- if pport_data["signal_category"] in ["Signal", "SignalGroup"] %}
-{{-rte_write_tx_com(pport_data, input_buff, "RTE_TASK_SERVICE_ID", "OS_TASK_" + task_name + "_ID", indent)}}
+{{-rte_write_tx_com(pport_data, input_buff, "RTE_TASK_SERVICE_ID", "OS_TASK_" + task_name.upper() + "_ID", indent)}}
 {%- endif %}
 {#- ===== END inter ecu com ===== #}
 {#- ===== START set events ===== #}
 {%- if pport_data["set_events"] %}
 #if (RTE_DLOG_ENABLED == STD_ON)
     {%- for set_event in pport_data["set_events"] %}
-{{indent}}ret = SetEvent((TaskType){{set_event["task_id"]}}, (EventMaskType){{set_event["event_mask"]}});
+{{indent}}ret = SetEvent((TaskType){{set_event["task_id"].upper()}}, (EventMaskType){{set_event["event_mask"].upper()}});
 {{indent}}if (ret != E_OK)
 {{indent}}{
-{{indent}}    Rte_LogOs(RTE_TASK_SERVICE_ID, OS_TASK_{{task_name}}_ID, OSServiceId_SetEvent, {{set_event["task_id"]}}, ret);
+{{indent}}    Rte_LogOs(RTE_TASK_SERVICE_ID, OS_TASK_{{task_name.upper()}}_ID, OSServiceId_SetEvent, {{set_event["task_id"].upper()}}, ret);
 {{indent}}}
     {%- endfor %}
 #else
     {%- for set_event in pport_data["set_events"] %}
-{{indent}}(void)SetEvent((TaskType) {{set_event["task_id"]}}, (EventMaskType){{set_event["event_mask"]}});
+{{indent}}(void)SetEvent((TaskType) {{set_event["task_id"].upper()}}, (EventMaskType){{set_event["event_mask"].upper()}});
     {%- endfor %}
 #endif
 {%- endif %}
@@ -2806,7 +2786,7 @@ FUNC(void,RTE_CODE) os_task_{{task_name.lower()}}(void *arg)
         if (Rte_StartTiming_InitState == RTE_STATE_INIT) {
         {%- elif runnable_groups["has_mode_disabling"] %}
 
-        if (!{{runnable_groups["disabling_flag"].upper()}} && ((ev & {{runnable_groups["mask"]}}) != (EventMaskType)0)) {
+        if (!{{runnable_groups["disabling_flag"]}} && ((ev & {{runnable_groups["mask"]}}) != (EventMaskType)0)) {
         {%- else %}
         {%- if loop.length > 1 %}
         if ((ev & {{runnable_groups["mask"]}}) != (EventMaskType)0) {
@@ -2867,7 +2847,7 @@ FUNC(void,RTE_CODE) os_task_{{task_name.lower()}}(void *arg)
 
             if (ret != E_OK)
             {
-                Rte_LogOs(RTE_TASK_SERVICE_ID, OS_TASK_{{task_name}}_ID, OSServiceId_SetEvent, clientData->TriggerTask, ret);
+                Rte_LogOs(RTE_TASK_SERVICE_ID, OS_TASK_{{task_name.upper()}}_ID, OSServiceId_SetEvent, clientData->TriggerTask, ret);
             }
             {%- elif pport["has_waiting_event"] %}
             if (clientData->waitingTask != INVALID_TASK)
@@ -2877,7 +2857,7 @@ FUNC(void,RTE_CODE) os_task_{{task_name.lower()}}(void *arg)
 
             if (ret != E_OK)
             {
-                Rte_LogOs(RTE_TASK_SERVICE_ID, OS_TASK_{{task_name}}_ID, OSServiceId_SetEvent, clientData->waitingTask, ret);
+                Rte_LogOs(RTE_TASK_SERVICE_ID, OS_TASK_{{task_name.upper()}}_ID, OSServiceId_SetEvent, clientData->waitingTask, ret);
             }
             {%- endif %}
 #else
@@ -3180,10 +3160,10 @@ FUNC(void,RTE_CODE) Rte_InitMemory_{{appl_name}}(void)
     Rte_EnableOSInterrupts();
 {%- elif pport["lock"] == "SPINLOCK" %}
 #if (RTE_DLOG_ENABLED == STD_ON)
-    retLog = GetSpinlock{{pport["spinlock_api_postfix"]}}((SpinlockIdType)OS_SPINLOCK_{{pport["lock_id"]}}_ID);
+    retLog = GetSpinlock{{pport["spinlock_api_postfix"]}}((SpinlockIdType)OS_SPINLOCK_{{pport["lock_id"].upper()}}_ID);
     if (retLog != E_OK)
     {
-        Rte_LogOs(RTE_WRITE_SERVICE_ID, Rte_Write_{{pport["component"]}}_{{pport["name"]}}_ID, OSServiceId_GetSpinlock, OS_SPINLOCK_{{pport["lock_id"]}}_ID, retLog);
+        Rte_LogOs(RTE_WRITE_SERVICE_ID, Rte_Write_{{pport["component"]}}_{{pport["name"]}}_ID, OSServiceId_GetSpinlock, OS_SPINLOCK_{{pport["lock_id"].upper()}}_ID, retLog);
     }
     {%- if pport.get("buff_struct_name", None) %}
     {{pport['buff_struct_name']}}.{{pport["buffer_name"]}} = data;
@@ -3195,13 +3175,13 @@ FUNC(void,RTE_CODE) Rte_InitMemory_{{appl_name}}(void)
     {%- for update_flag in pport['enable_update'] %}
     {{update_flag}} = TRUE;
     {%- endfor %}
-    retLog = ReleaseSpinlock{{pport["spinlock_api_postfix"]}}((SpinlockIdType)OS_SPINLOCK_{{pport["lock_id"]}}_ID);
+    retLog = ReleaseSpinlock{{pport["spinlock_api_postfix"]}}((SpinlockIdType)OS_SPINLOCK_{{pport["lock_id"].upper()}}_ID);
     if (retLog != E_OK)
     {
-        Rte_LogOs(RTE_WRITE_SERVICE_ID, Rte_Write_{{pport["component"]}}_{{pport["name"]}}_ID, OSServiceId_ReleaseSpinlock, OS_SPINLOCK_{{pport["lock_id"]}}_ID, retLog);
+        Rte_LogOs(RTE_WRITE_SERVICE_ID, Rte_Write_{{pport["component"]}}_{{pport["name"]}}_ID, OSServiceId_ReleaseSpinlock, OS_SPINLOCK_{{pport["lock_id"].upper()}}_ID, retLog);
     }
 #else
-    (void)GetSpinlock{{pport["spinlock_api_postfix"]}}((SpinlockIdType)OS_SPINLOCK_{{pport["lock_id"]}}_ID);
+    (void)GetSpinlock{{pport["spinlock_api_postfix"]}}((SpinlockIdType)OS_SPINLOCK_{{pport["lock_id"].upper()}}_ID);
     {%- if pport.get("buff_struct_name", None) %}
     {{pport['buff_struct_name']}}.{{pport["buffer_name"]}} = data;
     {%- else %}
@@ -3212,7 +3192,7 @@ FUNC(void,RTE_CODE) Rte_InitMemory_{{appl_name}}(void)
     {%- for update_flag in pport['enable_update'] %}
     {{update_flag}} = TRUE;
     {%- endfor %}
-    (void)ReleaseSpinlock{{pport["spinlock_api_postfix"]}}((SpinlockIdType)OS_SPINLOCK_{{pport["lock_id"]}}_ID);
+    (void)ReleaseSpinlock{{pport["spinlock_api_postfix"]}}((SpinlockIdType)OS_SPINLOCK_{{pport["lock_id"].upper()}}_ID);
 #endif
 {%- endif %}
 {%- endmacro %}
@@ -3241,10 +3221,10 @@ FUNC(void,RTE_CODE) Rte_InitMemory_{{appl_name}}(void)
     Rte_EnableOSInterrupts();
 {%- elif pport["lock"] == "SPINLOCK" %}
 #if (RTE_DLOG_ENABLED == STD_ON)
-    retLog = GetSpinlock{{pport["spinlock_api_postfix"]}}((SpinlockIdType)OS_SPINLOCK_{{pport["lock_id"]}}_ID);
+    retLog = GetSpinlock{{pport["spinlock_api_postfix"]}}((SpinlockIdType)OS_SPINLOCK_{{pport["lock_id"].upper()}}_ID);
     if (retLog != E_OK)
     {
-        Rte_LogOs(RTE_WRITE_SERVICE_ID, Rte_Write_{{pport["component"]}}_{{pport["name"]}}_ID, OSServiceId_GetSpinlock, OS_SPINLOCK_{{pport["lock_id"]}}_ID, retLog);
+        Rte_LogOs(RTE_WRITE_SERVICE_ID, Rte_Write_{{pport["component"]}}_{{pport["name"]}}_ID, OSServiceId_GetSpinlock, OS_SPINLOCK_{{pport["lock_id"].upper()}}_ID, retLog);
     }
     {{rte_write_complex_data(datatype['native_category'], pport['buffer_name'], datatype['name'])}}
     {{pport["global_counter"]}}++;
@@ -3252,20 +3232,20 @@ FUNC(void,RTE_CODE) Rte_InitMemory_{{appl_name}}(void)
     {%- for update_flag in pport['enable_update'] %}
     {{update_flag}} = TRUE;
     {%- endfor %}
-    retLog = ReleaseSpinlock{{pport["spinlock_api_postfix"]}}((SpinlockIdType)OS_SPINLOCK_{{pport["lock_id"]}}_ID);
+    retLog = ReleaseSpinlock{{pport["spinlock_api_postfix"]}}((SpinlockIdType)OS_SPINLOCK_{{pport["lock_id"].upper()}}_ID);
     if (retLog != E_OK)
     {
-        Rte_LogOs(RTE_WRITE_SERVICE_ID, Rte_Write_{{pport["component"]}}_{{pport["name"]}}_ID, OSServiceId_ReleaseSpinlock, OS_SPINLOCK_{{pport["lock_id"]}}_ID, retLog);
+        Rte_LogOs(RTE_WRITE_SERVICE_ID, Rte_Write_{{pport["component"]}}_{{pport["name"]}}_ID, OSServiceId_ReleaseSpinlock, OS_SPINLOCK_{{pport["lock_id"].upper()}}_ID, retLog);
     }
 #else
-    (void)GetSpinlock{{pport["spinlock_api_postfix"]}}((SpinlockIdType)OS_SPINLOCK_{{pport["lock_id"]}}_ID);
+    (void)GetSpinlock{{pport["spinlock_api_postfix"]}}((SpinlockIdType)OS_SPINLOCK_{{pport["lock_id"].upper()}}_ID);
     {{rte_write_complex_data(datatype['native_category'], pport['buffer_name'], datatype['name'])}}
     {{pport["global_counter"]}}++;
     {{pport["local_counter"]}} = {{pport["global_counter"]}};
     {%- for update_flag in pport['enable_update'] %}
     {{update_flag}} = TRUE;
     {%- endfor %}
-    (void)ReleaseSpinlock{{pport["spinlock_api_postfix"]}}((SpinlockIdType)OS_SPINLOCK_{{pport["lock_id"]}}_ID);
+    (void)ReleaseSpinlock{{pport["spinlock_api_postfix"]}}((SpinlockIdType)OS_SPINLOCK_{{pport["lock_id"].upper()}}_ID);
 #endif
 {%- endif %}
 {%- endmacro %}
@@ -3298,10 +3278,10 @@ FUNC(void,RTE_CODE) Rte_InitMemory_{{appl_name}}(void)
     Rte_EnableOSInterrupts();
 {%- elif pport["lock"] == "SPINLOCK" %}
 #if (RTE_DLOG_ENABLED == STD_ON)
-    retLog = GetSpinlock{{pport["spinlock_api_postfix"]}}((SpinlockIdType)OS_SPINLOCK_{{pport["buffer_name"]}}_ID);
+    retLog = GetSpinlock{{pport["spinlock_api_postfix"]}}((SpinlockIdType)OS_SPINLOCK_{{pport["buffer_name"].upper()}}_ID);
     if (retLog != E_OK)
     {
-        Rte_LogOs(RTE_WRITE_SERVICE_ID, Rte_Write_{{pport["component"]}}_{{pport["name"]}}_ID, OSServiceId_GetSpinlock, OS_SPINLOCK_{{pport["buffer_name"]}}_ID, retLog);
+        Rte_LogOs(RTE_WRITE_SERVICE_ID, Rte_Write_{{pport["component"]}}_{{pport["name"]}}_ID, OSServiceId_GetSpinlock, OS_SPINLOCK_{{pport["buffer_name"].upper()}}_ID, retLog);
     }
     {%- if pport.get("buff_struct_name", None) %}
     {{pport['buff_struct_name']}}.{{pport["buffer_name"]}} = data;
@@ -3311,13 +3291,13 @@ FUNC(void,RTE_CODE) Rte_InitMemory_{{appl_name}}(void)
     {%- for update_flag in pport['enable_update'] %}
     {{update_flag}} = TRUE;
     {%- endfor %}
-    retLog = ReleaseSpinlock{{pport["spinlock_api_postfix"]}}((SpinlockIdType)OS_SPINLOCK_{{pport["buffer_name"]}}_ID);
+    retLog = ReleaseSpinlock{{pport["spinlock_api_postfix"]}}((SpinlockIdType)OS_SPINLOCK_{{pport["buffer_name"].upper()}}_ID);
     if (retLog != E_OK)
     {
-        Rte_LogOs(RTE_WRITE_SERVICE_ID, Rte_Write_{{pport["component"]}}_{{pport["name"]}}_ID, OSServiceId_ReleaseSpinlock, OS_SPINLOCK_{{pport["buffer_name"]}}_ID, retLog);
+        Rte_LogOs(RTE_WRITE_SERVICE_ID, Rte_Write_{{pport["component"]}}_{{pport["name"]}}_ID, OSServiceId_ReleaseSpinlock, OS_SPINLOCK_{{pport["buffer_name"].upper()}}_ID, retLog);
     }
 #else
-    (void)GetSpinlock{{pport["spinlock_api_postfix"]}}((SpinlockIdType)OS_SPINLOCK_{{pport["buffer_name"]}}_ID);
+    (void)GetSpinlock{{pport["spinlock_api_postfix"]}}((SpinlockIdType)OS_SPINLOCK_{{pport["buffer_name"].upper()}}_ID);
     {%- if pport.get("buff_struct_name", None) %}
     {{pport['buff_struct_name']}}.{{pport["buffer_name"]}} = data;
     {%- else %}
@@ -3326,7 +3306,7 @@ FUNC(void,RTE_CODE) Rte_InitMemory_{{appl_name}}(void)
     {%- for update_flag in pport['enable_update'] %}
     {{update_flag}} = TRUE;
     {%- endfor %}
-    (void)ReleaseSpinlock{{pport["spinlock_api_postfix"]}}((SpinlockIdType)OS_SPINLOCK_{{pport["buffer_name"]}}_ID);
+    (void)ReleaseSpinlock{{pport["spinlock_api_postfix"]}}((SpinlockIdType)OS_SPINLOCK_{{pport["buffer_name"].upper()}}_ID);
 #endif
 {%- endif %}
 {%- endmacro %}
@@ -3351,27 +3331,27 @@ FUNC(void,RTE_CODE) Rte_InitMemory_{{appl_name}}(void)
     Rte_EnableOSInterrupts();
 {%- elif pport["lock"] == "SPINLOCK" %}
 #if (RTE_DLOG_ENABLED == STD_ON)
-    retLog = GetSpinlock{{pport["spinlock_api_postfix"]}}((SpinlockIdType)OS_SPINLOCK_{{pport["buffer_name"]}}_ID);
+    retLog = GetSpinlock{{pport["spinlock_api_postfix"]}}((SpinlockIdType)OS_SPINLOCK_{{pport["buffer_name"].upper()}}_ID);
     if (retLog != E_OK)
     {
-        Rte_LogOs(RTE_WRITE_SERVICE_ID, Rte_Write_{{pport["component"]}}_{{pport["name"]}}_ID, OSServiceId_GetSpinlock, OS_SPINLOCK_{{pport["buffer_name"]}}_ID, retLog);
+        Rte_LogOs(RTE_WRITE_SERVICE_ID, Rte_Write_{{pport["component"]}}_{{pport["name"]}}_ID, OSServiceId_GetSpinlock, OS_SPINLOCK_{{pport["buffer_name"].upper()}}_ID, retLog);
     }
     {{rte_write_complex_data(datatype['native_category'], pport['buffer_name'], datatype['name'])}}
     {%- for update_flag in pport['enable_update'] %}
     {{update_flag}} = TRUE;
     {%- endfor %}
-    retLog = ReleaseSpinlock{{pport["spinlock_api_postfix"]}}((SpinlockIdType)OS_SPINLOCK_{{pport["buffer_name"]}}_ID);
+    retLog = ReleaseSpinlock{{pport["spinlock_api_postfix"]}}((SpinlockIdType)OS_SPINLOCK_{{pport["buffer_name"].upper()}}_ID);
     if (retLog != E_OK)
     {
-        Rte_LogOs(RTE_WRITE_SERVICE_ID, Rte_Write_{{pport["component"]}}_{{pport["name"]}}_ID, OSServiceId_ReleaseSpinlock, OS_SPINLOCK_{{pport["buffer_name"]}}_ID, retLog);
+        Rte_LogOs(RTE_WRITE_SERVICE_ID, Rte_Write_{{pport["component"]}}_{{pport["name"]}}_ID, OSServiceId_ReleaseSpinlock, OS_SPINLOCK_{{pport["buffer_name"].upper()}}_ID, retLog);
     }
 #else
-    (void)GetSpinlock{{pport["spinlock_api_postfix"]}}((SpinlockIdType)OS_SPINLOCK_{{pport["buffer_name"]}}_ID);
+    (void)GetSpinlock{{pport["spinlock_api_postfix"]}}((SpinlockIdType)OS_SPINLOCK_{{pport["buffer_name"].upper()}}_ID);
     {{rte_write_complex_data(datatype['native_category'], pport['buffer_name'], datatype['name'])}}
     {%- for update_flag in pport['enable_update'] %}
     {{update_flag}} = TRUE;
     {%- endfor %}
-    (void)ReleaseSpinlock{{pport["spinlock_api_postfix"]}}((SpinlockIdType)OS_SPINLOCK_{{pport["buffer_name"]}}_ID);
+    (void)ReleaseSpinlock{{pport["spinlock_api_postfix"]}}((SpinlockIdType)OS_SPINLOCK_{{pport["buffer_name"].upper()}}_ID);
 #endif
 {%- endif %}
 {%- endmacro %}
@@ -3380,15 +3360,15 @@ FUNC(void,RTE_CODE) Rte_InitMemory_{{appl_name}}(void)
 {%- set merged_events = get_sr_merged_events_with_same_task(port) %}
 #if (RTE_DLOG_ENABLED == STD_ON)
         {%- for set_event in merged_events %}
-    retLog = SetEvent((TaskType){{set_event["task_id"]}}, (EventMaskType){{set_event["event_mask"]}});
+    retLog = SetEvent((TaskType){{set_event["task_id"].upper()}}, (EventMaskType){{set_event["event_mask"].upper()}});
     if (retLog != E_OK)
     {
-        Rte_LogOs({{rte_write_service_id}}, {{rte_write_api_id}}, OSServiceId_SetEvent, {{set_event["task_id"]}}, retLog);
+        Rte_LogOs({{rte_write_service_id}}, {{rte_write_api_id}}, OSServiceId_SetEvent, {{set_event["task_id"].upper()}}, retLog);
     }
         {%- endfor %}
 #else
         {%- for set_event in merged_events %}
-    (void)SetEvent((TaskType) {{set_event["task_id"]}}, (EventMaskType){{set_event["event_mask"]}});
+    (void)SetEvent((TaskType) {{set_event["task_id"].upper()}}, (EventMaskType){{set_event["event_mask"].upper()}});
         {%- endfor %}
 #endif
 {%- endmacro %}
@@ -3510,7 +3490,7 @@ FUNC(Std_ReturnType, RTE_CODE) Rte_Send_{{pport["component"]}}_{{pport["port_pro
         {%- endfor %}
 #else
         {%- for set_event in pport["set_events"] %}
-    (void)SetEvent((TaskType){{set_event["task_id"]}}, (EventMaskType){{set_event["event_mask"]}});
+    (void)SetEvent((TaskType){{set_event["task_id"].upper()}}, (EventMaskType){{set_event["event_mask"].upper()}});
         {%- endfor %}
 #endif
     {%- endif %}
@@ -3543,13 +3523,13 @@ FUNC({{rport["arg"]["datatype"]["name"]}}, RTE_CODE) Rte_DRead_{{rport["componen
     Rte_DisableOSInterrupts();
 {%- elif rport["lock"] == "SPINLOCK" %}
 #if (RTE_DLOG_ENABLED == STD_ON)
-    retLog = GetSpinlock{{rport["spinlock_api_postfix"]}}((SpinlockIdType)OS_SPINLOCK_{{rport["lock_id"]}}_ID);
+    retLog = GetSpinlock{{rport["spinlock_api_postfix"]}}((SpinlockIdType)OS_SPINLOCK_{{rport["lock_id"].upper()}}_ID);
     if (retLog != E_OK)
     {
-        Rte_LogOs(RTE_READ_SERVICE_ID, Rte_DRead_{{rport["component"]}}_{{rport["name"]}}_ID, OSServiceId_GetSpinlock, OS_SPINLOCK_{{rport["lock_id"]}}_ID, retLog);
+        Rte_LogOs(RTE_READ_SERVICE_ID, Rte_DRead_{{rport["component"]}}_{{rport["name"]}}_ID, OSServiceId_GetSpinlock, OS_SPINLOCK_{{rport["lock_id"].upper()}}_ID, retLog);
     }
 #else
-    (void)GetSpinlock{{rport["spinlock_api_postfix"]}}((SpinlockIdType)OS_SPINLOCK_{{rport["lock_id"]}}_ID);
+    (void)GetSpinlock{{rport["spinlock_api_postfix"]}}((SpinlockIdType)OS_SPINLOCK_{{rport["lock_id"].upper()}}_ID);
 #endif
 {%- endif %}
 
@@ -3583,13 +3563,13 @@ FUNC({{rport["arg"]["datatype"]["name"]}}, RTE_CODE) Rte_DRead_{{rport["componen
     Rte_EnableOSInterrupts();
 {%- elif rport["lock"] == "SPINLOCK" %}
 #if (RTE_DLOG_ENABLED == STD_ON)
-    retLog = ReleaseSpinlock{{rport["spinlock_api_postfix"]}}((SpinlockIdType)OS_SPINLOCK_{{rport["lock_id"]}}_ID);
+    retLog = ReleaseSpinlock{{rport["spinlock_api_postfix"]}}((SpinlockIdType)OS_SPINLOCK_{{rport["lock_id"].upper()}}_ID);
     if (retLog != E_OK)
     {
-        Rte_LogOs(RTE_READ_SERVICE_ID, Rte_DRead_{{rport["component"]}}_{{rport["name"]}}_ID, OSServiceId_ReleaseSpinlock, OS_SPINLOCK_{{rport["lock_id"]}}_ID, retLog);
+        Rte_LogOs(RTE_READ_SERVICE_ID, Rte_DRead_{{rport["component"]}}_{{rport["name"]}}_ID, OSServiceId_ReleaseSpinlock, OS_SPINLOCK_{{rport["lock_id"].upper()}}_ID, retLog);
     }
 #else
-    (void)ReleaseSpinlock{{rport["spinlock_api_postfix"]}}((SpinlockIdType)OS_SPINLOCK_{{rport["lock_id"]}}_ID);
+    (void)ReleaseSpinlock{{rport["spinlock_api_postfix"]}}((SpinlockIdType)OS_SPINLOCK_{{rport["lock_id"].upper()}}_ID);
 #endif
 {%- endif %}
 
@@ -3611,13 +3591,13 @@ FUNC({{rport["arg"]["datatype"]["name"]}}, RTE_CODE) Rte_DRead_{{rport["componen
     Rte_DisableOSInterrupts();
 {%- elif rport["lock"] == "SPINLOCK" %}
 #if (RTE_DLOG_ENABLED == STD_ON)
-    retLog = GetSpinlock{{rport["spinlock_api_postfix"]}}((SpinlockIdType)OS_SPINLOCK_{{rport["lock_id"]}}_ID);
+    retLog = GetSpinlock{{rport["spinlock_api_postfix"]}}((SpinlockIdType)OS_SPINLOCK_{{rport["lock_id"].upper()}}_ID);
     if (retLog != E_OK)
     {
-        Rte_LogOs(RTE_READ_SERVICE_ID, Rte_DRead_{{rport["component"]}}_{{rport["name"]}}_ID, OSServiceId_GetSpinlock, OS_SPINLOCK_{{rport["lock_id"]}}_ID, retLog);
+        Rte_LogOs(RTE_READ_SERVICE_ID, Rte_DRead_{{rport["component"]}}_{{rport["name"]}}_ID, OSServiceId_GetSpinlock, OS_SPINLOCK_{{rport["lock_id"].upper()}}_ID, retLog);
     }
 #else
-    (void)GetSpinlock{{rport["spinlock_api_postfix"]}}((SpinlockIdType)OS_SPINLOCK_{{rport["lock_id"]}}_ID);
+    (void)GetSpinlock{{rport["spinlock_api_postfix"]}}((SpinlockIdType)OS_SPINLOCK_{{rport["lock_id"].upper()}}_ID);
 #endif
 {%- endif %}
     {%- if rport.get("buff_struct_name", None) %}
@@ -3632,13 +3612,13 @@ FUNC({{rport["arg"]["datatype"]["name"]}}, RTE_CODE) Rte_DRead_{{rport["componen
     Rte_EnableOSInterrupts();
 {%- elif rport["lock"] == "SPINLOCK" %}
 #if (RTE_DLOG_ENABLED == STD_ON)
-    retLog = ReleaseSpinlock{{rport["spinlock_api_postfix"]}}((SpinlockIdType)OS_SPINLOCK_{{rport["lock_id"]}}_ID);
+    retLog = ReleaseSpinlock{{rport["spinlock_api_postfix"]}}((SpinlockIdType)OS_SPINLOCK_{{rport["lock_id"].upper()}}_ID);
     if (retLog != E_OK)
     {
-        Rte_LogOs(RTE_READ_SERVICE_ID, Rte_DRead_{{rport["component"]}}_{{rport["name"]}}_ID, OSServiceId_ReleaseSpinlock, OS_SPINLOCK_{{rport["lock_id"]}}_ID, retLog);
+        Rte_LogOs(RTE_READ_SERVICE_ID, Rte_DRead_{{rport["component"]}}_{{rport["name"]}}_ID, OSServiceId_ReleaseSpinlock, OS_SPINLOCK_{{rport["lock_id"].upper()}}_ID, retLog);
     }
 #else
-    (void)ReleaseSpinlock{{rport["spinlock_api_postfix"]}}((SpinlockIdType)OS_SPINLOCK_{{rport["lock_id"]}}_ID);
+    (void)ReleaseSpinlock{{rport["spinlock_api_postfix"]}}((SpinlockIdType)OS_SPINLOCK_{{rport["lock_id"].upper()}}_ID);
 #endif
 {%- endif %}
     return local_buffer;
@@ -3660,13 +3640,13 @@ FUNC(Std_ReturnType,RTE_CODE) Rte_Read_{{rport["component"]}}_{{rport["name"]}}(
     Rte_DisableOSInterrupts();
 {%- elif rport["lock"] == "SPINLOCK" %}
 #if (RTE_DLOG_ENABLED == STD_ON)
-    retLog = GetSpinlock{{rport["spinlock_api_postfix"]}}((SpinlockIdType)OS_SPINLOCK_{{rport["buffer_name"]}}_ID);
+    retLog = GetSpinlock{{rport["spinlock_api_postfix"]}}((SpinlockIdType)OS_SPINLOCK_{{rport["lock_id"].upper()}}_ID);
     if (retLog != E_OK)
     {
-        Rte_LogOs(RTE_READ_SERVICE_ID, Rte_Read_{{rport["component"]}}_{{rport["name"]}}_ID, OSServiceId_GetSpinlock, OS_SPINLOCK_{{rport["lock_id"]}}_ID, retLog);
+        Rte_LogOs(RTE_READ_SERVICE_ID, Rte_Read_{{rport["component"]}}_{{rport["name"]}}_ID, OSServiceId_GetSpinlock, OS_SPINLOCK_{{rport["lock_id"].upper()}}_ID, retLog);
     }
 #else
-    (void)GetSpinlock{{rport["spinlock_api_postfix"]}}((SpinlockIdType)OS_SPINLOCK_{{rport["lock_id"]}}_ID);
+    (void)GetSpinlock{{rport["spinlock_api_postfix"]}}((SpinlockIdType)OS_SPINLOCK_{{rport["lock_id"].upper()}}_ID);
 #endif
 {%- endif %}
 
@@ -3705,13 +3685,13 @@ FUNC(Std_ReturnType,RTE_CODE) Rte_Read_{{rport["component"]}}_{{rport["name"]}}(
     Rte_EnableOSInterrupts();
 {%- elif rport["lock"] == "SPINLOCK" %}
 #if (RTE_DLOG_ENABLED == STD_ON)
-    retLog = ReleaseSpinlock{{rport["spinlock_api_postfix"]}}((SpinlockIdType)OS_SPINLOCK_{{rport["lock_id"]}}_ID);
+    retLog = ReleaseSpinlock{{rport["spinlock_api_postfix"]}}((SpinlockIdType)OS_SPINLOCK_{{rport["lock_id"].upper()}}_ID);
     if (retLog != E_OK)
     {
-        Rte_LogOs(RTE_READ_SERVICE_ID, Rte_Read_{{rport["component"]}}_{{rport["name"]}}_ID, OSServiceId_ReleaseSpinlock, OS_SPINLOCK_{{rport["lock_id"]}}_ID, retLog);
+        Rte_LogOs(RTE_READ_SERVICE_ID, Rte_Read_{{rport["component"]}}_{{rport["name"]}}_ID, OSServiceId_ReleaseSpinlock, OS_SPINLOCK_{{rport["lock_id"].upper()}}_ID, retLog);
     }
 #else
-    (void)ReleaseSpinlock{{rport["spinlock_api_postfix"]}}((SpinlockIdType)OS_SPINLOCK_{{rport["lock_id"]}}_ID);
+    (void)ReleaseSpinlock{{rport["spinlock_api_postfix"]}}((SpinlockIdType)OS_SPINLOCK_{{rport["lock_id"].upper()}}_ID);
 #endif
 {%- endif %}
 
@@ -3746,13 +3726,13 @@ FUNC(Std_ReturnType,RTE_CODE) Rte_Read_{{rport["component"]}}_{{rport["name"]}}(
     Rte_DisableOSInterrupts();
 {%- elif rport["lock"] == "SPINLOCK" %}
 #if (RTE_DLOG_ENABLED == STD_ON)
-    retLog = GetSpinlock{{rport["spinlock_api_postfix"]}}((SpinlockIdType)OS_SPINLOCK_{{rport["buffer_name"]}}_ID);
+    retLog = GetSpinlock{{rport["spinlock_api_postfix"]}}((SpinlockIdType)OS_SPINLOCK_{{rport["buffer_name"].upper()}}_ID);
     if (retLog != E_OK)
     {
-        Rte_LogOs(RTE_READ_SERVICE_ID, Rte_Read_{{rport["component"]}}_{{rport["name"]}}_ID, OSServiceId_GetSpinlock, OS_SPINLOCK_{{rport["buffer_name"]}}_ID, retLog);
+        Rte_LogOs(RTE_READ_SERVICE_ID, Rte_Read_{{rport["component"]}}_{{rport["name"]}}_ID, OSServiceId_GetSpinlock, OS_SPINLOCK_{{rport["buffer_name"].upper()}}_ID, retLog);
     }
 #else
-    (void)GetSpinlock{{rport["spinlock_api_postfix"]}}((SpinlockIdType)OS_SPINLOCK_{{rport["buffer_name"]}}_ID);
+    (void)GetSpinlock{{rport["spinlock_api_postfix"]}}((SpinlockIdType)OS_SPINLOCK_{{rport["buffer_name"].upper()}}_ID);
 #endif
 {%- endif %}
 
@@ -3775,13 +3755,13 @@ FUNC(Std_ReturnType,RTE_CODE) Rte_Read_{{rport["component"]}}_{{rport["name"]}}(
     Rte_EnableOSInterrupts();
 {%- elif rport["lock"] == "SPINLOCK" %}
 #if (RTE_DLOG_ENABLED == STD_ON)
-    retLog = ReleaseSpinlock{{rport["spinlock_api_postfix"]}}((SpinlockIdType)OS_SPINLOCK_{{rport["buffer_name"]}}_ID);
+    retLog = ReleaseSpinlock{{rport["spinlock_api_postfix"]}}((SpinlockIdType)OS_SPINLOCK_{{rport["buffer_name"].upper()}}_ID);
     if (retLog != E_OK)
     {
-        Rte_LogOs(RTE_READ_SERVICE_ID, Rte_Read_{{rport["component"]}}_{{rport["name"]}}_ID, OSServiceId_ReleaseSpinlock, OS_SPINLOCK_{{rport["buffer_name"]}}_ID, retLog);
+        Rte_LogOs(RTE_READ_SERVICE_ID, Rte_Read_{{rport["component"]}}_{{rport["name"]}}_ID, OSServiceId_ReleaseSpinlock, OS_SPINLOCK_{{rport["buffer_name"].upper()}}_ID, retLog);
     }
 #else
-    (void)ReleaseSpinlock{{rport["spinlock_api_postfix"]}}((SpinlockIdType)OS_SPINLOCK_{{rport["buffer_name"]}}_ID);
+    (void)ReleaseSpinlock{{rport["spinlock_api_postfix"]}}((SpinlockIdType)OS_SPINLOCK_{{rport["buffer_name"].upper()}}_ID);
 #endif
 {%- endif %}
     return ret;
@@ -3854,7 +3834,7 @@ FUNC(Std_ReturnType, RTE_CODE) Rte_Receive_{{rport["component"]}}_{{rport["port_
 #if (RTE_DLOG_ENABLED == STD_ON)
     Std_ReturnType retLog;
 #endif
-    AlarmType alarm;
+    ScheduleTableType schtbl;
     EventMaskType ev;
     {%- endif %}
 
@@ -3872,16 +3852,16 @@ FUNC(Std_ReturnType, RTE_CODE) Rte_Receive_{{rport["component"]}}_{{rport["port_
     retQueue = Rte_Dequeue_{{appl_name}}(RTE_Q_{{queue_name}}, (void*)(data));
     if (retQueue == RTE_Q_EMPTY)
     {
-    {%- set task_name = rport['task'][0] %}
+    {%- set task_name = rport['task'][0].upper() %}
     {%- if rport['timeout'] <= 0 %}
         ret = RTE_E_NO_DATA;
     {%- else %}
 #if (RTE_DLOG_ENABLED == STD_ON)
-        alarm = (AlarmType){{rport['alarm_id'].upper()}};
-        retLog = SetRelAlarm(alarm, RTE_MSEC_TO_TICKS({{rport['timeout']}}, {{rport['seconds_per_tick']}}), 0);
+        schtbl = (ScheduleTableType){{rport["schedule_table"]["id"]}};
+        retLog = StartScheduleTableRel(schtbl, RTE_START_SCH_TBL_OFFSET);
         if (retLog != E_OK)
         {
-            Rte_LogOs(RTE_RECEIVE_SERVICE_ID, Rte_Receive_{{rport["component"]}}_{{rport["port_prototype"]}}_{{rport['data_element']}}_ID, OSServiceId_SetRelAlarm, alarm, retLog);
+            Rte_LogOs(RTE_RECEIVE_SERVICE_ID, Rte_Receive_{{rport["component"]}}_{{rport["port_prototype"]}}_{{rport['data_element']}}_ID, OSServiceId_StartScheduleTableRel, schtbl, retLog);
         }
         do
         {
@@ -3911,15 +3891,15 @@ FUNC(Std_ReturnType, RTE_CODE) Rte_Receive_{{rport["component"]}}_{{rport["port_
         while (retQueue == RTE_Q_EMPTY);
         if (ret != RTE_E_TIMEOUT)
         {
-            retLog = CancelAlarm(alarm);
+            retLog = StopScheduleTable(schtbl);
             if (retLog != E_OK)
             {
-                Rte_LogOs(RTE_RECEIVE_SERVICE_ID, Rte_Receive_{{rport["component"]}}_{{rport["port_prototype"]}}_{{rport['data_element']}}_ID, OSServiceId_CancelAlarm, alarm, retLog);
+                Rte_LogOs(RTE_RECEIVE_SERVICE_ID, Rte_Receive_{{rport["component"]}}_{{rport["port_prototype"]}}_{{rport['data_element']}}_ID, OSServiceId_StopScheduleTable, schtbl, retLog);
             }
         }
 #else
-        alarm = (AlarmType){{rport['alarm_id'].upper()}};
-        (void)SetRelAlarm(alarm, RTE_MSEC_TO_TICKS({{rport['timeout']}}, {{rport['seconds_per_tick']}}), 0);
+        schtbl = (ScheduleTableType){{rport["schedule_table"]["id"]}};
+        (void)StartScheduleTableRel(schtbl, RTE_START_SCH_TBL_OFFSET);
         do
         {
             (void)WaitEvent(((EventMaskType) RTE_EV_WAITPOINT_{{task_name}}) | ((EventMaskType) RTE_EV_TIMEOUT_{{task_name}}));
@@ -3936,7 +3916,7 @@ FUNC(Std_ReturnType, RTE_CODE) Rte_Receive_{{rport["component"]}}_{{rport["port_
         while (retQueue == RTE_Q_EMPTY);
         if (ret != RTE_E_TIMEOUT)
         {
-            (void) CancelAlarm(alarm);
+            (void)StopScheduleTable(schtbl);
         }
 #endif
     {%- endif %}
@@ -3974,21 +3954,21 @@ FUNC(Std_ReturnType, RTE_CODE) Rte_Receive_{{rport["component"]}}_{{rport["port_
 #if (RTE_DLOG_ENABLED == STD_ON)
     Std_ReturnType retLog;
 #endif
-    AlarmType alarm;
+    ScheduleTableType schtbl;
     EventMaskType ev;
     {%- endif %}
 
     ret = Rte_IocReceive_{{rport["component"]}}_{{queue_name}}(data);
-    {%- set task_name = rport['task'][0] %}
+    {%- set task_name = rport['task'][0].upper() %}
     {%- if rport['timeout'] > 0 %}
     if (ret == RTE_E_NO_DATA)
     {
 #if (RTE_DLOG_ENABLED == STD_ON)
-        alarm = (AlarmType){{rport['alarm_id'].upper()}};
-        retLog = SetRelAlarm(alarm, RTE_MSEC_TO_TICKS({{rport['timeout']}}, {{rport['seconds_per_tick']}}), 0);
+        schtbl = (ScheduleTableType){{rport["schedule_table"]["id"]}};
+        retLog = StartScheduleTableRel(schtbl, RTE_START_SCH_TBL_OFFSET);;
         if (retLog != E_OK)
         {
-            Rte_LogOs(RTE_RECEIVE_SERVICE_ID, Rte_Receive_{{rport["component"]}}_{{rport["port_prototype"]}}_{{rport['data_element']}}_ID, OSServiceId_SetRelAlarm, alarm, retLog);
+            Rte_LogOs(RTE_RECEIVE_SERVICE_ID, Rte_Receive_{{rport["component"]}}_{{rport["port_prototype"]}}_{{rport['data_element']}}_ID, OSServiceId_StartScheduleTableRel, schtbl, retLog);
         }
         do
         {
@@ -4018,15 +3998,15 @@ FUNC(Std_ReturnType, RTE_CODE) Rte_Receive_{{rport["component"]}}_{{rport["port_
         while (ret == RTE_E_NO_DATA);
         if (ret != RTE_E_TIMEOUT)
         {
-            retLog = CancelAlarm(alarm);
+            retLog = StopScheduleTable(schtbl);
             if (retLog != E_OK)
             {
-                Rte_LogOs(RTE_RECEIVE_SERVICE_ID, Rte_Receive_{{rport["component"]}}_{{rport["port_prototype"]}}_{{rport['data_element']}}_ID, OSServiceId_CancelAlarm, alarm, retLog);
+                Rte_LogOs(RTE_RECEIVE_SERVICE_ID, Rte_Receive_{{rport["component"]}}_{{rport["port_prototype"]}}_{{rport['data_element']}}_ID, OSServiceId_StopScheduleTable, schtbl, retLog);
             }
         }
 #else
-        alarm = (AlarmType){{rport['alarm_id'].upper()}};
-        (void)SetRelAlarm(alarm, RTE_MSEC_TO_TICKS({{rport['timeout']}}, {{rport['seconds_per_tick']}}), 0);
+        schtbl = (ScheduleTableType){{rport["schedule_table"]["id"]}};
+        (void)StartScheduleTableRel(schtbl, RTE_START_SCH_TBL_OFFSET);;
         do
         {
             (void)WaitEvent(((EventMaskType) RTE_EV_WAITPOINT_{{task_name}}) | ((EventMaskType) RTE_EV_TIMEOUT_{{task_name}}));
@@ -4043,7 +4023,7 @@ FUNC(Std_ReturnType, RTE_CODE) Rte_Receive_{{rport["component"]}}_{{rport["port_
         while (ret == RTE_E_NO_DATA);
         if (ret != RTE_E_TIMEOUT)
         {
-            (void) CancelAlarm(alarm);
+            (void)StopScheduleTable(schtbl);
         }
 #endif
     }
@@ -4160,7 +4140,7 @@ FUNC(Std_ReturnType,RTE_CODE) Rte_Call_{{rport["component"]}}_{{rport["name"]}}(
         return ret;
     }
 
-    {%- set the_same_task = rport['no_dup_tasks'][0] %}
+    {%- set the_same_task = rport['no_dup_tasks'][0].upper() %}
 #if (RTE_DLOG_ENABLED == STD_ON)
     Std_ReturnType retLog = SetEvent((TaskType){{rport["set_events"][0]["task_id"]}}, (EventMaskType){{rport["set_events"][0]["event_mask"]}});
     if (retLog != E_OK)
@@ -4201,7 +4181,7 @@ FUNC(Std_ReturnType,RTE_CODE) Rte_Call_{{rport["component"]}}_{{rport["name"]}}(
         while(*clientData->Rte_CallCompleted_Client != *clientData->Rte_CallCompleted_Server);
     }
 #else
-    (void)SetEvent((TaskType) {{rport["set_events"][0]["task_id"]}}, (EventMaskType){{rport["set_events"][0]["event_mask"]}});
+    (void)SetEvent((TaskType) {{rport["set_events"][0]["task_id"].upper()}}, (EventMaskType){{rport["set_events"][0]["event_mask"].upper()}});
     {
         do
         {
@@ -4236,8 +4216,10 @@ FUNC(Std_ReturnType,RTE_CODE) Rte_Call_{{rport["component"]}}_{{rport["name"]}}(
 FUNC(Std_ReturnType,RTE_CODE) Rte_Call_{{rport["component"]}}_{{rport["name"]}}({{"void" if arg_list | length == 0 else arg_list}})
 {
     Std_ReturnType ret = RTE_E_OK;
+
     EventMaskType ev;
-    AlarmType alarm;
+    ScheduleTableType schtbl;
+
     uint8 clientId = Rte_CS_ClientConfigIndex_{{rport["component"]}}_{{rport["name"]}};
     {%- if rport['no_dup_tasks']|length > 1 %}
     TaskType task;
@@ -4274,105 +4256,104 @@ FUNC(Std_ReturnType,RTE_CODE) Rte_Call_{{rport["component"]}}_{{rport["name"]}}(
 #endif
         return ret;
     }
-    {%- set the_same_task = rport['no_dup_tasks'][0] %}
-    {%- set the_same_alarm = rport['alarms'].values()|list|first %}
+
+    {%- set the_same_task = rport['no_dup_tasks'][0].upper() %}
     {%- if rport['no_dup_tasks']|length > 1 %}
-        {# TODO #}
+        {#- TODO #}
     {%- else %}
-    alarm = (AlarmType){{the_same_alarm['alarm_id'].upper()}};
+    schtbl = (ScheduleTableType){{rport["schedule_table"]["id"]}};
     {%- endif %}
 #if (RTE_DLOG_ENABLED == STD_ON)
-    Std_ReturnType retLog = SetRelAlarm(alarm, RTE_MSEC_TO_TICKS({{rport['timeout']}}, {{the_same_alarm['seconds_per_tick']}}), 0);
+    Std_ReturnType retLog = StartScheduleTableRel(schtbl, RTE_START_SCH_TBL_OFFSET);
     if (retLog != E_OK)
     {
-        Rte_LogOs(RTE_CALL_SERVICE_ID, Rte_Call_{{rport["component"]}}_{{rport["name"]}}_ID, OSServiceId_SetRelAlarm, alarm, retLog);
+        Rte_LogOs(RTE_CALL_SERVICE_ID, Rte_Call_{{rport["component"]}}_{{rport["name"]}}_ID, OSServiceId_StartScheduleTableRel, schtbl, retLog);
     }
-    retLog = SetEvent((TaskType) {{rport["set_events"][0]["task_id"]}}, (EventMaskType){{rport["set_events"][0]["event_mask"]}});
+    retLog = SetEvent((TaskType) {{rport["set_events"][0]["task_id"].upper()}}, (EventMaskType){{rport["set_events"][0]["event_mask"].upper()}});
     if (retLog != E_OK)
     {
-        Rte_LogOs(RTE_CALL_SERVICE_ID, Rte_Call_{{rport["component"]}}_{{rport["name"]}}_ID, OSServiceId_SetEvent, {{rport["set_events"][0]["task_id"]}}, retLog);
+        Rte_LogOs(RTE_CALL_SERVICE_ID, Rte_Call_{{rport["component"]}}_{{rport["name"]}}_ID, OSServiceId_SetEvent, {{rport["set_events"][0]["task_id"].upper()}}, retLog);
     }
-    {
-        do
-        {
-        {%- if rport['no_dup_tasks']|length > 1 %}
-            retLog = WaitEvent((EventMaskType)RTE_TASK_WAITPOINT_EVENT_MASK | (EventMaskType)RTE_TASK_TIMEOUT_EVENT_MASK);
-        {%- else %}
-            retLog = WaitEvent((EventMaskType)RTE_EV_WAITPOINT_{{the_same_task}} | (EventMaskType)RTE_EV_TIMEOUT_{{the_same_task}});
-        {%- endif %}
-            if (retLog != E_OK)
-            {
-                Rte_LogOs(RTE_CALL_SERVICE_ID, Rte_Call_{{rport["component"]}}_{{rport["name"]}}_ID, OSServiceId_WaitEvent, RTE_DLOG_EMPTY_ID, retLog);
-            }
-        {%- if rport['no_dup_tasks']|length > 1 %}
-            retLog = GetEvent(task, &ev);
-        {%- else %}
-            retLog = GetEvent((TaskType) OS_TASK_{{the_same_task}}_ID, &ev);
-        {%- endif %}
-            if (retLog != E_OK)
-            {
-                Rte_LogOs(RTE_CALL_SERVICE_ID, Rte_Call_{{rport["component"]}}_{{rport["name"]}}_ID, OSServiceId_GetEvent, RTE_DLOG_EMPTY_ID, retLog);
-            }
-        {%- if rport['no_dup_tasks']|length > 1 %}
-            retLog = ClearEvent(ev & ((EventMaskType)RTE_TASK_WAITPOINT_EVENT_MASK | (EventMaskType)RTE_TASK_TIMEOUT_EVENT_MASK));
-        {%- else %}
-            retLog = ClearEvent(ev & ((EventMaskType)RTE_EV_WAITPOINT_{{the_same_task}} | (EventMaskType)RTE_EV_TIMEOUT_{{the_same_task}}));
-        {%- endif %}
-            if (retLog != E_OK)
-            {
-                Rte_LogOs(RTE_CALL_SERVICE_ID, Rte_Call_{{rport["component"]}}_{{rport["name"]}}_ID, OSServiceId_ClearEvent, RTE_DLOG_EMPTY_ID, retLog);
-            }
 
-        {%- if rport['no_dup_tasks']|length > 1 %}
-            if ((ev & (EventMaskType))RTE_TASK_WAITPOINT_EVENT_MASK == (EventMaskType)RTE_TASK_WAITPOINT_EVENT_MASK)
-        {%- else %}
-            if ((ev & (EventMaskType)RTE_EV_TIMEOUT_{{the_same_task}}) == (EventMaskType)RTE_EV_TIMEOUT_{{the_same_task}})
-        {%- endif %}
-            {
-                ret = RTE_E_TIMEOUT;
-            }
+    do
+    {
+    {%- if rport['no_dup_tasks']|length > 1 %}
+        retLog = WaitEvent((EventMaskType)RTE_TASK_WAITPOINT_EVENT_MASK | (EventMaskType)RTE_TASK_TIMEOUT_EVENT_MASK);
+    {%- else %}
+        retLog = WaitEvent((EventMaskType)RTE_EV_WAITPOINT_{{the_same_task}} | (EventMaskType)RTE_EV_TIMEOUT_{{the_same_task}});
+    {%- endif %}
+        if (retLog != E_OK)
+        {
+            Rte_LogOs(RTE_CALL_SERVICE_ID, Rte_Call_{{rport["component"]}}_{{rport["name"]}}_ID, OSServiceId_WaitEvent, RTE_DLOG_EMPTY_ID, retLog);
         }
-        while((ret != RTE_E_TIMEOUT) && (*clientData->Rte_CallCompleted_Client != *clientData->Rte_CallCompleted_Server));
+    {%- if rport['no_dup_tasks']|length > 1 %}
+        retLog = GetEvent(task, &ev);
+    {%- else %}
+        retLog = GetEvent((TaskType) OS_TASK_{{the_same_task}}_ID, &ev);
+    {%- endif %}
+        if (retLog != E_OK)
+        {
+            Rte_LogOs(RTE_CALL_SERVICE_ID, Rte_Call_{{rport["component"]}}_{{rport["name"]}}_ID, OSServiceId_GetEvent, RTE_DLOG_EMPTY_ID, retLog);
+        }
+    {%- if rport['no_dup_tasks']|length > 1 %}
+        retLog = ClearEvent(ev & ((EventMaskType)RTE_TASK_WAITPOINT_EVENT_MASK | (EventMaskType)RTE_TASK_TIMEOUT_EVENT_MASK));
+    {%- else %}
+        retLog = ClearEvent(ev & ((EventMaskType)RTE_EV_WAITPOINT_{{the_same_task}} | (EventMaskType)RTE_EV_TIMEOUT_{{the_same_task}}));
+    {%- endif %}
+        if (retLog != E_OK)
+        {
+            Rte_LogOs(RTE_CALL_SERVICE_ID, Rte_Call_{{rport["component"]}}_{{rport["name"]}}_ID, OSServiceId_ClearEvent, RTE_DLOG_EMPTY_ID, retLog);
+        }
+
+    {%- if rport['no_dup_tasks']|length > 1 %}
+        if ((ev & (EventMaskType))RTE_TASK_WAITPOINT_EVENT_MASK == (EventMaskType)RTE_TASK_WAITPOINT_EVENT_MASK)
+    {%- else %}
+        if ((ev & (EventMaskType)RTE_EV_TIMEOUT_{{the_same_task}}) == (EventMaskType)RTE_EV_TIMEOUT_{{the_same_task}})
+    {%- endif %}
+        {
+            ret = RTE_E_TIMEOUT;
+        }
     }
+    while((ret != RTE_E_TIMEOUT) && (*clientData->Rte_CallCompleted_Client != *clientData->Rte_CallCompleted_Server));
+
     if (ret != RTE_E_TIMEOUT)
     {
-        StatusType osStatus = CancelAlarm(alarm);
+        StatusType osStatus = StopScheduleTable(schtbl);
         if (osStatus != E_OK)
         {
-            Rte_LogOs(RTE_CALL_SERVICE_ID, Rte_Call_{{rport["component"]}}_{{rport["name"]}}_ID, OSServiceId_CancelAlarm, alarm, osStatus);
+            Rte_LogOs(RTE_CALL_SERVICE_ID, Rte_Call_{{rport["component"]}}_{{rport["name"]}}_ID, OSServiceId_StopScheduleTable, schtbl, osStatus);
         }
     }
 #else
-    (void)SetRelAlarm(alarm, RTE_MSEC_TO_TICKS({{rport['timeout']}}, {{the_same_alarm['seconds_per_tick']}}), 0);
+    (void)StartScheduleTableRel(schtbl, RTE_START_SCH_TBL_OFFSET);
+    (void)SetEvent((TaskType) {{rport["set_events"][0]["task_id"].upper()}}, (EventMaskType){{rport["set_events"][0]["event_mask"].upper()}});
 
-    (void)SetEvent((TaskType) {{rport["set_events"][0]["task_id"]}}, (EventMaskType){{rport["set_events"][0]["event_mask"]}});
+    do
     {
-        do
-        {
-        {%- if rport['no_dup_tasks']|length > 1 %}
-            (void)WaitEvent((EventMaskType)RTE_TASK_WAITPOINT_EVENT_MASK | (EventMaskType)RTE_TASK_TIMEOUT_EVENT_MASK);
-            (void)GetEvent(task, &ev);
-            (void)ClearEvent(ev & ((EventMaskType)RTE_TASK_WAITPOINT_EVENT_MASK | (EventMaskType)RTE_TASK_TIMEOUT_EVENT_MASK));
-        {%- else %}
-            (void)WaitEvent((EventMaskType)RTE_EV_WAITPOINT_{{the_same_task}} | (EventMaskType)RTE_EV_TIMEOUT_{{the_same_task}});
-            (void)GetEvent((TaskType)OS_TASK_{{the_same_task}}_ID, &ev);
-            (void)ClearEvent(ev & ((EventMaskType)RTE_EV_WAITPOINT_{{the_same_task}} | (EventMaskType)RTE_EV_TIMEOUT_{{the_same_task}}));
-        {%- endif %}
+    {%- if rport['no_dup_tasks']|length > 1 %}
+        (void)WaitEvent((EventMaskType)RTE_TASK_WAITPOINT_EVENT_MASK | (EventMaskType)RTE_TASK_TIMEOUT_EVENT_MASK);
+        (void)GetEvent(task, &ev);
+        (void)ClearEvent(ev & ((EventMaskType)RTE_TASK_WAITPOINT_EVENT_MASK | (EventMaskType)RTE_TASK_TIMEOUT_EVENT_MASK));
+    {%- else %}
+        (void)WaitEvent((EventMaskType)RTE_EV_WAITPOINT_{{the_same_task}} | (EventMaskType)RTE_EV_TIMEOUT_{{the_same_task}});
+        (void)GetEvent((TaskType)OS_TASK_{{the_same_task}}_ID, &ev);
+        (void)ClearEvent(ev & ((EventMaskType)RTE_EV_WAITPOINT_{{the_same_task}} | (EventMaskType)RTE_EV_TIMEOUT_{{the_same_task}}));
+    {%- endif %}
 
-        {%- if rport['no_dup_tasks']|length > 1 %}
-            if ((ev & (EventMaskType))RTE_TASK_WAITPOINT_EVENT_MASK == (EventMaskType)RTE_TASK_WAITPOINT_EVENT_MASK)
-        {%- else %}
-            if ((ev & (EventMaskType)RTE_EV_TIMEOUT_{{the_same_task}}) == (EventMaskType)RTE_EV_TIMEOUT_{{the_same_task}})
-        {%- endif %}
-            {
-                ret = RTE_E_TIMEOUT;
-            }
+    {%- if rport['no_dup_tasks']|length > 1 %}
+        if ((ev & (EventMaskType))RTE_TASK_WAITPOINT_EVENT_MASK == (EventMaskType)RTE_TASK_WAITPOINT_EVENT_MASK)
+    {%- else %}
+        if ((ev & (EventMaskType)RTE_EV_TIMEOUT_{{the_same_task}}) == (EventMaskType)RTE_EV_TIMEOUT_{{the_same_task}})
+    {%- endif %}
+        {
+            ret = RTE_E_TIMEOUT;
         }
-        while((ret != RTE_E_TIMEOUT) && (*clientData->Rte_CallCompleted_Client != *clientData->Rte_CallCompleted_Server));
     }
+    while((ret != RTE_E_TIMEOUT) && (*clientData->Rte_CallCompleted_Client != *clientData->Rte_CallCompleted_Server));
+
     if (ret != RTE_E_TIMEOUT)
     {
-        (void) CancelAlarm(alarm);
+        (void)StopScheduleTable(schtbl);
     }
 #endif
     if (ret != RTE_E_TIMEOUT)
@@ -4392,6 +4373,7 @@ FUNC(Std_ReturnType,RTE_CODE) Rte_Call_{{rport["component"]}}_{{rport["name"]}}(
         Rte_LogRte(RTE_CALL_SERVICE_ID, Rte_Call_{{rport["component"]}}_{{rport["name"]}}_ID, ret);
     }
 #endif
+
     return ret;
 }
 {% endfor %}
@@ -4400,31 +4382,29 @@ FUNC(Std_ReturnType,RTE_CODE) Rte_Call_{{rport["component"]}}_{{rport["name"]}}(
 {%- for rport in get_appl_async_cs_multicore_rports(appl_name) %}
 {%- set connected_pport = rport["connected_ports"]["ports"][0] %}
 {%- set arg_list = get_input_args_str_list(rport["operation"]["args"].values())%}
+{%- set sch_tbl_id = rport["schedule_table"]["id"] %}
 FUNC(Std_ReturnType,RTE_CODE) Rte_Call_{{rport["component"]}}_{{rport["name"]}}({{"void" if arg_list | length == 0 else arg_list | join(", ")}})
 {
     Std_ReturnType ret = RTE_E_OK;
     uint8 clientId = Rte_CS_ClientConfigIndex_{{rport["component"]}}_{{rport["name"]}};
-    {%- if rport["return_mode"] == "polling" and rport["timeout"] != 0 %}
-    AlarmType alarm;
-    {%- endif %}
 
     const Rte_CS_DataType_{{connected_pport["component"]}}_{{connected_pport["name"]}} *clientData = &Rte_CS_Data_{{connected_pport["component"]}}_{{connected_pport["name"]}}[clientId];
     *clientData->Rte_CallCompleted_Client = !(*clientData->Rte_CallCompleted_Server);
-{%- for arg in get_appl_cs_in_args(rport["operation"]["args"]) %}
-{%- if arg["direction"] == "IN" %}
-{%- if arg["category"] in ["ARRAY", "STRUCTURE", "UNION"] %}
+    {%- for arg in get_appl_cs_in_args(rport["operation"]["args"]) %}
+        {%- if arg["direction"] == "IN" %}
+            {%- if arg["category"] in ["ARRAY", "STRUCTURE", "UNION"] %}
     Rte_MemCpy(clientData->{{arg["name"]}}, {{arg["name"]}}, sizeof({{arg["type"]}}));
-{%- else %}
+            {%- else %}
     *clientData->{{arg["name"]}} = {{arg["name"]}};
-{%- endif %}
-{%- elif arg["direction"] == "INOUT" %}
-{%- if arg["category"] in ["ARRAY", "STRUCTURE", "UNION"] %}
+            {%- endif %}
+        {%- elif arg["direction"] == "INOUT" %}
+            {%- if arg["category"] in ["ARRAY", "STRUCTURE", "UNION"] %}
     Rte_MemCpy(clientData->{{arg["name"]}}, {{arg["name"]}}, sizeof({{arg["type"]}}));
-{%- else %}
+            {%- else %}
     *clientData->{{arg["name"]}} = {{arg["name"]}};
-{%- endif %}
-{%- endif %}
-{%- endfor%}
+            {%- endif %}
+        {%- endif %}
+    {%- endfor%}
     {%- set queue = rport['queue'].values()|list|first %}
     ret = Rte_IocSend_{{rport['component']}}_{{queue['client_name']}}(clientId);
     if (ret != RTE_E_OK)
@@ -4437,12 +4417,11 @@ FUNC(Std_ReturnType,RTE_CODE) Rte_Call_{{rport["component"]}}_{{rport["name"]}}(
 
 #if (RTE_DLOG_ENABLED == STD_ON)
     Std_ReturnType retLog;
-{%- if rport["return_mode"] == "polling" and rport["timeout"] != 0 %}
-    alarm = (AlarmType){{rport['alarm_id'].upper()}};
-    retLog = SetRelAlarm(alarm, RTE_MSEC_TO_TICKS({{rport['timeout']}}, {{rport['seconds_per_tick']}}), 0);
+{%- if rport["return_mode"] == "polling" and rport["timeout"] != 0 and rport["schedule_table"] %}
+    retLog = StartScheduleTableRel((ScheduleTableType){{sch_tbl_id}}, (TickType)0);
     if (retLog != E_OK)
     {
-        Rte_LogOs(RTE_CALL_SERVICE_ID, Rte_Call_{{rport["component"]}}_{{rport["name"]}}_ID, OSServiceId_SetRelAlarm, alarm, retLog);
+        Rte_LogOs(RTE_CALL_SERVICE_ID, Rte_Call_{{rport["component"]}}_{{rport["name"]}}_ID, OSServiceId_StartScheduleTableRel, {{sch_tbl_id}}, retLog);
     }
 {%- endif %}
     retLog = SetEvent((TaskType) {{rport["set_events"][0]["task_id"].upper()}}, (EventMaskType){{rport["set_events"][0]["event_mask"].upper()}});
@@ -4451,12 +4430,12 @@ FUNC(Std_ReturnType,RTE_CODE) Rte_Call_{{rport["component"]}}_{{rport["name"]}}(
         Rte_LogOs(RTE_CALL_SERVICE_ID, Rte_Call_{{rport["component"]}}_{{rport["name"]}}_ID, OSServiceId_SetEvent, {{rport["set_events"][0]["task_id"]}}, retLog);
     }
 #else
-{%- if rport["return_mode"] == "polling" and rport["timeout"] != 0 %}
-    alarm = (AlarmType){{rport['alarm_id'].upper()}};
-    (void)SetRelAlarm(alarm, RTE_MSEC_TO_TICKS({{rport['timeout']}}, {{rport['seconds_per_tick']}}), 0);
+{%- if rport["return_mode"] == "polling" and rport["timeout"] != 0 and rport["schedule_table"] %}
+    (void)StartScheduleTableRel((ScheduleTableType){{sch_tbl_id}}, (TickType)0);
 {%- endif %}
     (void)SetEvent((TaskType) {{rport["set_events"][0]["task_id"].upper()}}, (EventMaskType){{rport["set_events"][0]["event_mask"].upper()}});
 #endif
+
     return ret;
 }
 {% endfor %}
@@ -4482,17 +4461,17 @@ FUNC(Std_ReturnType,RTE_CODE) Rte_Result_{{rport["component"]}}_{{rport["name"]}
 {
     Std_ReturnType ret = RTE_E_OK;
     EventMaskType ev;
-    AlarmType alarm = (AlarmType){{rport['alarm_id'].upper()}};
+    ScheduleTableType schtbl = (ScheduleTableType){{rport["schedule_table"]["id"]}};
     uint8 clientId = Rte_CS_ClientConfigIndex_{{rport["component"]}}_{{rport["name"]}};
 
     const Rte_CS_DataType_{{connected_pport["component"]}}_{{connected_pport["name"]}} *clientData = &Rte_CS_Data_{{connected_pport["component"]}}_{{connected_pport["name"]}}[clientId];
-    {# TODO #}
+
     {%- set the_same_task = rport['task'][0].upper() %}
 #if (RTE_DLOG_ENABLED == STD_ON)
-    Std_ReturnType retLog = SetRelAlarm(alarm, RTE_MSEC_TO_TICKS({{rport['timeout']}}, {{rport['seconds_per_tick']}}), 0);
+    Std_ReturnType retLog = StartScheduleTableRel(schtbl, RTE_START_SCH_TBL_OFFSET);
     if (retLog != E_OK)
     {
-        Rte_LogOs(RTE_RESULT_SERVICE_ID, Rte_Result_{{rport["component"]}}_{{rport["name"]}}_ID, OSServiceId_SetRelAlarm, alarm, retLog);
+        Rte_LogOs(RTE_RESULT_SERVICE_ID, Rte_Result_{{rport["component"]}}_{{rport["name"]}}_ID, OSServiceId_StartScheduleTableRel, schtbl, retLog);
     }
     do
     {
@@ -4520,14 +4499,14 @@ FUNC(Std_ReturnType,RTE_CODE) Rte_Result_{{rport["component"]}}_{{rport["name"]}
 
     if (ret != RTE_E_TIMEOUT)
     {
-        StatusType osStatus = CancelAlarm(alarm);
+        StatusType osStatus = StopScheduleTable(schtbl);
         if (osStatus != E_OK)
         {
-            Rte_LogOs(RTE_RESULT_SERVICE_ID, Rte_Result_{{rport["component"]}}_{{rport["name"]}}_ID, OSServiceId_CancelAlarm, alarm, osStatus);
+            Rte_LogOs(RTE_RESULT_SERVICE_ID, Rte_Result_{{rport["component"]}}_{{rport["name"]}}_ID, OSServiceId_StopScheduleTable, schtbl, osStatus);
         }
     }
 #else
-    (void)SetRelAlarm(alarm, RTE_MSEC_TO_TICKS({{rport['timeout']}}, {{rport['seconds_per_tick']}}), 0);
+    (void)StartScheduleTableRel(schtbl, RTE_START_SCH_TBL_OFFSET);
     do
     {
         (void)WaitEvent(((EventMaskType) RTE_EV_WAITPOINT_{{the_same_task}}) | ((EventMaskType) RTE_EV_TIMEOUT_{{the_same_task}}));
@@ -4542,7 +4521,7 @@ FUNC(Std_ReturnType,RTE_CODE) Rte_Result_{{rport["component"]}}_{{rport["name"]}
     while((ret != RTE_E_TIMEOUT) && (*clientData->Rte_CallCompleted_Client != *clientData->Rte_CallCompleted_Server));
     if (ret != RTE_E_TIMEOUT)
     {
-        (void) CancelAlarm(alarm);
+        (void)StopScheduleTable(schtbl);
     }
 #endif
 
@@ -4560,29 +4539,24 @@ FUNC(Std_ReturnType,RTE_CODE) Rte_Result_{{rport["component"]}}_{{rport["name"]}
 }
 
 {%- elif rport["return_mode"] == "polling" %}
+    {%- set sch_tbl_id = rport["schedule_table"]["id"] %}
 {#- API Implementation for CS async polling mode #}
 FUNC(Std_ReturnType,RTE_CODE) Rte_Result_{{rport["component"]}}_{{rport["name"]}}({{arg_list_str}})
 {
     Std_ReturnType ret = RTE_E_OK;
     volatile boolean callCompleted = (boolean)FALSE;
-    TickType ticks;
-    AlarmType alarm = (AlarmType)OS_ALARM_RTE_AL_TIMEOUT_{{rport["component"]}}_{{rport["name"]}}_ID;
     uint8 clientId = Rte_CS_ClientConfigIndex_{{rport["component"]}}_{{rport["name"]}};
-    StatusType osStatus = GetAlarm(alarm, &ticks);
 
-#if (RTE_DLOG_ENABLED == STD_ON)
-    if (osStatus != E_OK)
-    {
-        Rte_LogOs(RTE_RESULT_SERVICE_ID, Rte_Result_{{rport["component"]}}_{{rport["name"]}}_ID, OSServiceId_GetAlarm, alarm, osStatus);
-    }
-#endif
+    ScheduleTableStatusType osStatus = SCHEDULETABLE_STOPPED;
+    (void)GetScheduleTableStatus((ScheduleTableType){{sch_tbl_id}}, &osStatus);
+
     const Rte_CS_DataType_{{connected_pport["component"]}}_{{connected_pport["name"]}} *clientData = &Rte_CS_Data_{{connected_pport["component"]}}_{{connected_pport["name"]}}[clientId];
     callCompleted = (*clientData->Rte_CallCompleted_Client == *clientData->Rte_CallCompleted_Server);
     if (callCompleted)
     {
 {{-rte_result_cp_result_out(rport, "        ")}}
     }
-    else if (osStatus == E_OS_NOFUNC) {
+    else if (osStatus == SCHEDULETABLE_STOPPED) {
         ret = RTE_E_TIMEOUT;
     }
     else {
@@ -4592,13 +4566,13 @@ FUNC(Std_ReturnType,RTE_CODE) Rte_Result_{{rport["component"]}}_{{rport["name"]}
     if (ret != RTE_E_TIMEOUT)
     {
 #if (RTE_DLOG_ENABLED == STD_ON)
-        Std_ReturnType retLog = CancelAlarm(alarm);
+        Std_ReturnType retLog = StopScheduleTable((ScheduleTableType){{sch_tbl_id}});
         if (retLog != E_OK)
         {
-            Rte_LogOs(RTE_RESULT_SERVICE_ID, Rte_Result_{{rport["component"]}}_{{rport["name"]}}_ID, OSServiceId_CancelAlarm, alarm, retLog);
+            Rte_LogOs(RTE_RESULT_SERVICE_ID, Rte_Result_{{rport["component"]}}_{{rport["name"]}}_ID, OSServiceId_StopScheduleTable, {{sch_tbl_id}}, retLog);
         }
 #else
-        (void)CancelAlarm(alarm);
+        StopScheduleTable((ScheduleTableType){{sch_tbl_id}});
 #endif
     }
 
@@ -4744,7 +4718,7 @@ FUNC(Std_ReturnType, RTE_CODE) Rte_IocSend_{{queue['component']}}_{{queue['port'
     {%- if queue['ioc_type'] == 'OSISR' %}
     Rte_DisableOSInterrupts();
     {%- elif queue['ioc_type'] == 'SPINLOCK' %}
-    (void)GetSpinlock((SpinlockIdType)OS_SPINLOCK_Rte_{{queue["name"]}}_ID);
+    (void)GetSpinlock((SpinlockIdType)OS_SPINLOCK_RTE_{{queue["name"].upper()}}_ID);
     {%- endif %}
     if ({{queue['size']}}U <= Rte_ioc_{{queue['name']}}_ElementCnt)
     {
@@ -4760,7 +4734,7 @@ FUNC(Std_ReturnType, RTE_CODE) Rte_IocSend_{{queue['component']}}_{{queue['port'
     {%- if queue['ioc_type'] == 'OSISR' %}
     Rte_EnableOSInterrupts();
     {%- elif queue['ioc_type'] == 'SPINLOCK' %}
-    (void)ReleaseSpinlock((SpinlockIdType)OS_SPINLOCK_Rte_{{queue["name"]}}_ID);
+    (void)ReleaseSpinlock((SpinlockIdType)OS_SPINLOCK_RTE_{{queue["name"].upper()}}_ID);
     {%- endif %}
 
     if (ret == RTE_E_OK) {
@@ -4795,7 +4769,7 @@ FUNC(Std_ReturnType, RTE_CODE) Rte_IocReceive_{{queue['component']}}_{{queue['na
     {%- if queue['ioc_type'] == 'OSISR' %}
     Rte_DisableOSInterrupts();
     {%- elif queue['ioc_type'] == 'SPINLOCK' %}
-    (void)GetSpinlock((SpinlockIdType)OS_SPINLOCK_Rte_{{queue["name"]}}_ID);
+    (void)GetSpinlock((SpinlockIdType)OS_SPINLOCK_RTE_{{queue["name"].upper()}}_ID);
     {%- endif %}
 
     if (Rte_ioc_{{queue['name']}}_Overflow1 != Rte_ioc_{{queue['name']}}_Overflow0)
@@ -4810,7 +4784,7 @@ FUNC(Std_ReturnType, RTE_CODE) Rte_IocReceive_{{queue['component']}}_{{queue['na
     {%- if queue['ioc_type'] == 'OSISR' %}
     Rte_EnableOSInterrupts();
     {%- elif queue['ioc_type'] == 'SPINLOCK' %}
-    (void)ReleaseSpinlock((SpinlockIdType)OS_SPINLOCK_Rte_{{queue["name"]}}_ID);
+    (void)ReleaseSpinlock((SpinlockIdType)OS_SPINLOCK_RTE_{{queue["name"].upper()}}_ID);
     {%- endif %}
 
     {%- if datatype['native_category'] == 'NUMERICAL' %}
@@ -4835,7 +4809,7 @@ FUNC(Std_ReturnType, RTE_CODE) Rte_IocSend_{{queue['component']}}_{{queue['clien
     {%- if queue['ioc_type'] == 'OSISR' %}
     Rte_DisableOSInterrupts();
     {%- elif queue['ioc_type'] == 'SPINLOCK' %}
-    (void)GetSpinlock((SpinlockIdType)OS_SPINLOCK_Rte_{{queue["name"]}}_ID);
+    (void)GetSpinlock((SpinlockIdType)OS_SPINLOCK_RTE_{{queue["name"].upper()}}_ID);
     {%- endif %}
     if ({{queue['size']}}U <= Rte_ioc_{{queue['name']}}_ElementCnt)
     {
@@ -4851,7 +4825,7 @@ FUNC(Std_ReturnType, RTE_CODE) Rte_IocSend_{{queue['component']}}_{{queue['clien
     {%- if queue['ioc_type'] == 'OSISR' %}
     Rte_EnableOSInterrupts();
     {%- elif queue['ioc_type'] == 'SPINLOCK' %}
-    (void)ReleaseSpinlock((SpinlockIdType)OS_SPINLOCK_Rte_{{queue["name"]}}_ID);
+    (void)ReleaseSpinlock((SpinlockIdType)OS_SPINLOCK_RTE_{{queue["name"].upper()}}_ID);
     {%- endif %}
 
     if (ret == RTE_E_OK) {
@@ -4879,7 +4853,7 @@ FUNC(Std_ReturnType, RTE_CODE) Rte_IocReceive_{{queue['component']}}_{{queue['na
     {%- if queue['ioc_type'] == 'OSISR' %}
     Rte_DisableOSInterrupts();
     {%- elif queue['ioc_type'] == 'SPINLOCK' %}
-    (void)GetSpinlock((SpinlockIdType)OS_SPINLOCK_Rte_{{queue["name"]}}_ID);
+    (void)GetSpinlock((SpinlockIdType)OS_SPINLOCK_RTE_{{queue["name"].upper()}}_ID);
     {%- endif %}
 
     if (Rte_ioc_{{queue['name']}}_Overflow1 != Rte_ioc_{{queue['name']}}_Overflow0)
@@ -4894,7 +4868,7 @@ FUNC(Std_ReturnType, RTE_CODE) Rte_IocReceive_{{queue['component']}}_{{queue['na
     {%- if queue['ioc_type'] == 'OSISR' %}
     Rte_EnableOSInterrupts();
     {%- elif queue['ioc_type'] == 'SPINLOCK' %}
-    (void)ReleaseSpinlock((SpinlockIdType)OS_SPINLOCK_Rte_{{queue["name"]}}_ID);
+    (void)ReleaseSpinlock((SpinlockIdType)OS_SPINLOCK_RTE_{{queue["name"].upper()}}_ID);
     {%- endif %}
 
     *data = Rte_ioc_{{queue['name']}}[head];
@@ -5007,27 +4981,27 @@ FUNC(void, RTE_CODE) Rte_IrvRead_{{api["swc_inst"]}}_{{api["run_var"]}}({{data_a
         {%- endif %}
         {%- if loop.first %}
             {%- if gen_compu_method %}
-        ret = Com_SendSignal(ComConf_ComGroupSignal_{{type_mapping["i_signal"]}}_Tx, &(Local_{{buff}}_{{type_mapping["implementation_record_element"]}}));
+        ret = com_send_signal(ComConf_ComGroupSignal_{{type_mapping["i_signal"]}}_Tx, &(Local_{{buff}}_{{type_mapping["implementation_record_element"]}}));
             {%- else %}
-        ret = Com_SendSignal(ComConf_ComGroupSignal_{{type_mapping["i_signal"]}}_Tx, &({{buff}}.{{type_mapping["implementation_record_element"]}}));
+        ret = com_send_signal(ComConf_ComGroupSignal_{{type_mapping["i_signal"]}}_Tx, &({{buff}}.{{type_mapping["implementation_record_element"]}}));
             {%- endif %}
         {%- else %}
             {%- if gen_compu_method %}
-        ret |= Com_SendSignal(ComConf_ComGroupSignal_{{type_mapping["i_signal"]}}_Tx, &(Local_{{buff}}_{{type_mapping["implementation_record_element"]}}));
+        ret |= com_send_signal(ComConf_ComGroupSignal_{{type_mapping["i_signal"]}}_Tx, &(Local_{{buff}}_{{type_mapping["implementation_record_element"]}}));
             {%- else %}
-        ret |= Com_SendSignal(ComConf_ComGroupSignal_{{type_mapping["i_signal"]}}_Tx, &({{buff}}.{{type_mapping["implementation_record_element"]}}));
+        ret |= com_send_signal(ComConf_ComGroupSignal_{{type_mapping["i_signal"]}}_Tx, &({{buff}}.{{type_mapping["implementation_record_element"]}}));
             {%- endif %}
         {%- endif %}
     {%- endfor %}
-        ret |= Com_SendSignalGroup(ComConf_ComSignalGroup_{{signal_name}}_Tx);
+        ret |= com_send_signal_group(ComConf_ComSignalGroup_{{signal_name}}_Tx);
 {%- elif signal["datatype"]["native_category"] == "ARRAY" %}
-        ret = Com_SendSignal(ComConf_ComSignal_{{signal_name}}_Tx, *(&{{buff}}));
+        ret = com_send_signal(ComConf_ComSignal_{{signal_name}}_Tx, *(&{{buff}}));
 {%- else %}
         {%- if gen_compu_method and signal["datatype"]["native_category"] == "NUMERICAL" %}
         {{-macros.gen_tx_num_sig_dm_compu_method_proxy("        ", buff, buff, signal["real_sig_type"], signal['compu_method'], 'false')}}
-        ret = Com_SendSignal(ComConf_ComSignal_{{signal_name}}_Tx, (&Local_{{buff}}));
+        ret = com_send_signal(ComConf_ComSignal_{{signal_name}}_Tx, (&Local_{{buff}}));
         {%- else %}
-        ret = Com_SendSignal(ComConf_ComSignal_{{signal_name}}_Tx, (&{{buff}}));
+        ret = com_send_signal(ComConf_ComSignal_{{signal_name}}_Tx, (&{{buff}}));
         {%- endif %}
 {%- endif %}
 {%- if signal["data_mapping_status"] %}

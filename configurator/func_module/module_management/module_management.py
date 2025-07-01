@@ -35,6 +35,7 @@ from basic_func_module.autosar_utils.utils import (
     get_upper_multiplicity,
     get_upper_multiplicity_infinite,
     set_short_name,
+    get_admin_data_all,
 )
 
 CUR_DIR_PATH = os.path.abspath(os.path.dirname(__file__))
@@ -67,6 +68,7 @@ class ModuleManagement:
                 continue
             new_path = old_path.replace(old_name, new_name, 1)
             set_short_name(ecuc_conf_val, new_name)
+            cls.clear_file_label(f"{old_name}_ecuc.arxml", ecuc_obj)
             bsw_ecuc_obj_dict[new_name] = AutosarUtil.update_autosar(ecuc_obj)
         if not new_path:
             return False
@@ -78,6 +80,16 @@ class ModuleManagement:
                 setattr(value_ref_obj, "valueOf_", value_ref.replace(old_path, new_path, 1))
         logger.info(f"Successfully changed module name: {old_name} -> {new_name}.")
         return True
+
+    @classmethod
+    def clear_file_label(cls, file_name, ecuc_obj):
+        for admin_data in ecuc_obj.find_nodes("ADMIN-DATA"):
+            admin_data_all = get_admin_data_all(admin_data.get_parent()) or {}
+            if file_name == (
+                admin_data_all.get(AutosarEcuc.VCOS_DEFAULT_LABEL, {}).get(AutosarEcuc.VCOS_DEFAULT_FILE_LABEL)
+                or admin_data_all.get(AutosarEcuc.VCOS_PATH_LABEL, {}).get(AutosarEcuc.VCOS_FILE_PATH_LABEL)
+            ):
+                admin_data.SDGS.SDG.clear()
 
     def get_all_module_list(self):
         all_module_list = sorted(self.sys_info.all_modules)

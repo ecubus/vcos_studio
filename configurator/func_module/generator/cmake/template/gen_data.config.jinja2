@@ -18,6 +18,7 @@
 # ##############################################################################
 {# blank line #}
 #include "Os/rt_framework.config"
+#include "../user.config"
 {%- for module_name in get_enable_module_list() %}
 {%- if module_name == "Os"%}
 CONFIG_RT_FRAMEWORK=y

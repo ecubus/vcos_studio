@@ -358,7 +358,9 @@ class TaskMapping:
             )
 
             # 2 update os arxml based on rte codegen dict
+            # these configsed are used SOLOLY within RTE
             self.update_spinlock_and_ioc_infos(os_autosar, mod_autosar["Os"], rte_codegen_dict)
+            self.update_rte_schedule_table_info(os_autosar, mod_autosar["Os"], rte_codegen_dict)
 
             os_process = LoadPlugIn.load_module("Rte", "config_plug_in.bsw_process.os_process")
             OsManager = getattr(os_process, "OsManager")
@@ -1199,3 +1201,25 @@ class TaskMapping:
             OsManager.remove_spinlock_info(os_autosar, spinlock_id)
         for spinlock_id, appl_name_list in sorted(all_spinlocks.items()):
             OsManager.add_spinlock_info(os_autosar, mod_autosar, spinlock_id, appl_name_list)
+
+
+    def get_all_rte_schedule_table_cfg(self, rte_codegen_dict):
+        all_rte_schedule_table_cfg = []
+        for swc in rte_codegen_dict.values():
+            for r_port in swc["rports"].values():
+                if not r_port.get("schedule_table", {}):
+                    continue
+                sch_tbl_info = PortManager.get_rte_schedule_table_info(r_port)
+                if not sch_tbl_info:
+                    continue
+                all_rte_schedule_table_cfg.append(sch_tbl_info)
+
+        return sorted(all_rte_schedule_table_cfg, key=lambda x: x["name"])
+
+
+    def update_rte_schedule_table_info(self, os_autosar, mod_autosar, rte_codegen_dict):
+        os_process = LoadPlugIn.load_module("Rte", "config_plug_in.bsw_process.os_process")
+        OsManager = getattr(os_process, "OsManager")
+
+        OsManager.remove_all_rte_schedule_table_info(os_autosar)
+        OsManager.add_all_rte_schedule_table_info(os_autosar, mod_autosar, self.get_all_rte_schedule_table_cfg(rte_codegen_dict))

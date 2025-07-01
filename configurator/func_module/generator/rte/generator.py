@@ -61,7 +61,7 @@ def get_rendering_context(file_template_name, input_dict, sys_config=None, appl=
             "sr_dm_glob_vars": input_dict.get("sr_dm_glob_vars", {}),
             "RteGeneration_dict": input_dict.get("RteGeneration", {}),
             "appl_info": input_dict.get("appl_dict", {}).get(appl, {}),
-            "alarm_dict": input_dict.get("alarm_dict", {}),
+            "os_counter": input_dict.get("os_counter", {}),
             "signal_dict": input_dict.get("signal_dict", {}),
             "ecuc_config": ecuc_autosar_dict,
             "bsw_instances": input_dict.get("bsw_instances", {}),
@@ -127,9 +127,9 @@ def generate(sys_config: dict, config_dict: dict, user_code, parser_ret, ecuc_au
     if parser_ret == ErrorCode.RTE_CODEGEN:
         if os.path.exists(os.path.join(sys_config["gendata_path"], "Rte")):
             shutil.rmtree(os.path.join(sys_config["gendata_path"], "Rte"))
-            os.mkdir(os.path.join(sys_config["gendata_path"], "Rte"))
+            os.makedirs(os.path.join(sys_config["gendata_path"], "Rte"), exist_ok=True)
         else:
-            os.mkdir(os.path.join(sys_config["gendata_path"], "Rte"))
+            os.makedirs(os.path.join(sys_config["gendata_path"], "Rte"), exist_ok=True)
         # Create required directories
         rte_output_dir = os.path.realpath(os.path.join(output_file_dir, "Rte"))
         # logger.info(f"Creating {rte_output_dir} directories if they don't already exist")

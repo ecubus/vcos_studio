@@ -48,7 +48,7 @@ class PortMappingUI(QtWidgets.QWidget):
         self.table_view_config = MappingViewConfig()
         self.table_view_config.menu_options = {
             "Connect": [":/add.svg", self.connect_port_solt],
-            "Disconnect": [":/not_ok.svg", self.disconnect_port_solt]
+            "Disconnect": [":/not_ok.svg", self.disconnect_port_solt],
         }
         self.table_view = MappingTableView(self.table_view_config)
         self.table_proxy_model = MappingFilterProxyModel()
@@ -58,7 +58,10 @@ class PortMappingUI(QtWidgets.QWidget):
         self.assistant_text_lable = QtWidgets.QLabel()
         assistant_link_text = "Component Connection Assistant"
         assistant_text_info = "create application connectors."
-        self.assistant_text = f'Use the <a href="#" style="text-decoration:underline;color:blue;">{assistant_link_text}</a> {assistant_text_info}'
+        self.assistant_text = (
+            f'Use the <a href="#" style="text-decoration:underline;color:blue;">{assistant_link_text}'
+            f"</a> {assistant_text_info}"
+        )
         self.button_layout_v = QtWidgets.QVBoxLayout()
         self.all_port_push_button = QtWidgets.QPushButton("All")
         self.p_port_push_button = QtWidgets.QPushButton("P")
@@ -236,8 +239,9 @@ class PortMappingUI(QtWidgets.QWidget):
         if name == "get_tree_root_item":
             root_item = MappingTreeItem("root")
             ecu_composition_item = MappingTreeItem("ECU_Composition", root_item)
-            all_component_name_list = self.callback("port_mapping_get_all_component_name_to_update",
-                                                    "port_mapping") or []
+            all_component_name_list = (
+                self.callback("port_mapping_get_all_component_name_to_update", "port_mapping") or []
+            )
             for component_name in all_component_name_list:
                 ecu_composition_item.append_child(MappingTreeItem(component_name))
             return root_item
@@ -254,9 +258,10 @@ class PortMappingUI(QtWidgets.QWidget):
             self.init_callback_param_dict()
             self.callback_param_dict["item_name"] = "PR"
             table_data_list = self.callback("port_mapping_get_main_table_data", self.callback_param_dict)
-            return [[MappingTableItem(data[1], self.main_table_model_callback_handler)
-                     for data in column_data]
-                    for column_data in table_data_list]
+            return [
+                [MappingTableItem(data[1], self.main_table_model_callback_handler) for data in column_data]
+                for column_data in table_data_list
+            ]
         if name == "get_table_header_list":
             return MT_Index.get_header_list()
         if name == "get_table_item_text":
@@ -301,10 +306,12 @@ class PortMappingUI(QtWidgets.QWidget):
                 return self.callback("port_mapping_third_level_double_click_port", self.callback_param_dict)
 
         elif name == "get_table_item_text":
-            if config.mapping_ui_type & (MappingAssistantUIType.SELECT_PORT_PROTOTYPE |
-                                         MappingAssistantUIType.PORT_MAPPING_ASSISTANT |
-                                         MappingAssistantUIType.ASSISTANT_SELECT_PORT_PROTOTYPE |
-                                         MappingAssistantUIType.ASSISTANT_SELECT_COMPONENT_PROTOTYPE):
+            if config.mapping_ui_type & (
+                MappingAssistantUIType.SELECT_PORT_PROTOTYPE
+                | MappingAssistantUIType.PORT_MAPPING_ASSISTANT
+                | MappingAssistantUIType.ASSISTANT_SELECT_PORT_PROTOTYPE
+                | MappingAssistantUIType.ASSISTANT_SELECT_COMPONENT_PROTOTYPE
+            ):
                 if config.current_page_title == "Component Connection Confirm":
                     return kwargs["data"]["data"]
                 else:
@@ -325,14 +332,18 @@ class PortMappingUI(QtWidgets.QWidget):
                 self.callback_param_dict["row_items"] = config.input_data
                 self.callback_param_dict["confirmed_data_dict"] = self.mapping_assistant_ui.config.table_data
                 self.callback_param_dict["component_row_items"] = kwargs["data"]
-                self.mapping_assistant_ui.config.input_data = self.callback("port_mapping_third_level_component_finish", self.callback_param_dict)
+                self.mapping_assistant_ui.config.input_data = self.callback(
+                    "port_mapping_third_level_component_finish", self.callback_param_dict
+                )
                 self.mapping_assistant_ui.table_model.reset_model()
                 return
             if config.mapping_ui_type == MappingAssistantUIType.ASSISTANT_SELECT_PORT_PROTOTYPE:
                 self.callback_param_dict["row_items"] = config.input_data
                 self.callback_param_dict["confirmed_data_dict"] = self.mapping_assistant_ui.config.table_data
                 self.callback_param_dict["port_row_items"] = kwargs["data"]
-                self.mapping_assistant_ui.config.input_data = self.callback("port_mapping_third_level_port_finish", self.callback_param_dict)
+                self.mapping_assistant_ui.config.input_data = self.callback(
+                    "port_mapping_third_level_port_finish", self.callback_param_dict
+                )
                 self.mapping_assistant_ui.table_model.reset_model()
                 return
 

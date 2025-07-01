@@ -492,7 +492,7 @@ def get_template_input_parameter_dict_from_parsed_data(config_dict: dict) -> dic
         "sr_dm_glob_vars": config_dict["data_mapping_config"].get("glob_vars", {}),
         "RteGeneration": RteGeneration_info,
         "appl_dict": config_dict["appl_dict"],
-        "alarm_dict": config_dict["alarm_dict"],
+        "os_counter": config_dict["os_counter"],
         "signal_dict": config_dict["data_mapping_config"]["signal_dict"],
         "cal_prm": _get_calibration_parameter_codegen_dict(config_dict["asw_config"]),
     }

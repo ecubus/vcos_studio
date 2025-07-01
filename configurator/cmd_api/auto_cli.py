@@ -24,7 +24,6 @@ sys.path.append(os.path.join(CUR_FILE_PATH, "..", "third_party"))
 if __name__ == "__main__":
     from cmd_adaptor.cmd_interaction.cmd_logger import logger
     from cmd_adaptor.cmd_interaction.cmd_interaction import CmdInteraction
-    from func_module.health_monitor.perf_record import record_function_stats
     from func_module.health_monitor import perf_logger
 
     parser = argparse.ArgumentParser()
@@ -35,6 +34,10 @@ if __name__ == "__main__":
         title="sub-commands", dest="subcommand", description="valid subcommands", help="additional help"
     )
     parser_import = subparsers.add_parser("Import")
+    parser_import.add_argument("--cdd", type=str, nargs="?", metavar="", default=None, help="cdd file path")
+    parser_import.add_argument("--dbc_ldf", type=str, nargs="?", metavar="", default=None, help="dbc file path")
+    parser_import.add_argument("--acn", action="store_true", default=False, help="if add channel name to signal")
+    parser_import.add_argument("--node", type=str, nargs="?", metavar="", default=None, help="node file path")
     parser_import.add_argument("--asw", type=str, nargs="?", metavar="", default=None, help="asw file path")
     parser_import.add_argument("--mcal", type=str, nargs="?", metavar="", default=None, help="mcal file path")
     parser_import.add_argument(
@@ -42,7 +45,11 @@ if __name__ == "__main__":
     )
     parser_mapping = subparsers.add_parser("AutoMapping")
     parser_mapping.add_argument(
-        "-m", "--Mapping", type=str, default="TaskMapping", help="mapping type:AutoTaskMappingByFile"
+        "-m",
+        "--Mapping",
+        type=str,
+        default="TaskMapping",
+        help="mapping type:AutoTaskMappingByFile/AutoPortMapping/AutoServiceMapping/AudtoDataMapping",
     )
     parser_mapping.add_argument("-f", "--File", type=str, default=None, help="mapping type:Excel")
     parser_mapping.add_argument("-t", "--TaskName", type=str, default=None, help="task name")
@@ -50,6 +57,66 @@ if __name__ == "__main__":
     parser_mapping.add_argument("-n", "--RunnableName", type=str, default=None, help="runnable name")
     parser_mapping.add_argument("-i", "--PositionInTask", type=int, default=-1, help="position in task")
     parser_mapping.add_argument("-e", "--EventName", type=str, default="", help="runnbale bind event name")
+
+    # ################## port/service/data mapping using command ###################
+    parser_mapping.add_argument("-c", "--component", type=str, default=None, help="Component prototype name")
+    parser_mapping.add_argument("-d", "--direction", type=str, default=None, help="Tx/Rx")
+    parser_mapping.add_argument(
+        "-pr", "--prefix", type=str, default=None, help="Port prototype前缀字符串。可为空，代表无前缀"
+    )
+    parser_mapping.add_argument(
+        "-po", "--postfix", type=str, default=None, help="Port prototype后缀字符串。可为空，代表无后缀"
+    )
+    parser_mapping.add_argument(
+        "-sp",
+        "--allow_split",
+        action="store_true",
+        default=False,
+        help="allow split 允许1:N连接。为空，代表不允许1:N连接；不为空，代表允许1:N连接",
+    )
+    parser_mapping.add_argument(
+        "-me",
+        "--allow_merge",
+        action="store_true",
+        default=False,
+        help="allow merge 允许N:1连接。为空，代表不允许N:1；不为空，代表允许N:1",
+    )
+    parser_mapping.add_argument(
+        "-ms",
+        "--allow_multi_signal",
+        action="store_true",
+        default=False,
+        help="allow multi-signal 允许1个Port自动连接多个Signal。为空，代表不允许；不为空，代表允许",
+    )
+    parser_mapping.add_argument(
+        "-ic",
+        "--ignore_match_case",
+        action="store_true",
+        default=False,
+        help="Ignore Match case忽略大小写匹配。为空，代表大小写匹配；不为空，代表不大小写匹配",
+    )
+    parser_mapping.add_argument(
+        "-iw",
+        "--ignore_match_whole_word",
+        action="store_true",
+        default=False,
+        help="Ignore match whole word忽略全词匹配。为空，代表全词匹配；不为空，代表不全词匹配",
+    )
+    parser_mapping.add_argument(
+        "-lg",
+        "--log_save",
+        action="store_true",
+        default=False,
+        help="log save 保存log。为空，代表不保存；不为空，代表保存",
+    )
+    parser_mapping.add_argument(
+        "-compat",
+        "--match_compatibility",
+        action="store_true",
+        default=False,
+        help="Match compatibility 数据类型长度兼容自动连接。为空，代表不自动连接；不为空，代表兼容类型自动连接",
+    )
+    parser_mapping.add_argument("--cmd", type=str, default=None, help="Port prototype后缀字符串。可为空，代表无后缀")
 
     parser_validate = subparsers.add_parser("Validate")
     parser_validate.add_argument(
@@ -65,6 +132,10 @@ if __name__ == "__main__":
     )
     parser_generate.add_argument(
         "--force", action="store_const", const=True, default=False, help="No incremental generation"
+    )
+    parser_swc_generate = subparsers.add_parser("Swc_Generate")
+    parser_swc_generate.add_argument(
+        "--swcs", type=str, default=None, nargs="*", help="Generate swc template: --module CanInput, CanOutput"
     )
 
     parser_upgrade = subparsers.add_parser("Upgrade")
@@ -84,10 +155,11 @@ if __name__ == "__main__":
         result = cmd_interaction.execute_validation_command(args.Project, args.module)
     elif args.subcommand == "Generate":
         result = cmd_interaction.execute_generate_command(args.Project, args.module, args.debug, args.force)
+    elif args.subcommand == "Swc_Generate":
+        result = cmd_interaction.execute_swc_generate_command(args.Project, args.swcs)
     elif args.subcommand == "Upgrade":
         result = cmd_interaction.execute_upgrade_command(args.Project)
 
-    record_function_stats()
     if result is True:
         logger.info("AutoCli successfully")
     else:

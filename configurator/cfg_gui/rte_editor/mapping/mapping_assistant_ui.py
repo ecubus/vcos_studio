@@ -225,6 +225,7 @@ class MappingAssistantUI(QtWidgets.QWidget):
 
     def switch_next_page(self):
         self.filter_table_layout_v.removeWidget(self.table_view)
+        self.table_view.setParent(None)
         page_cache = {}
         page_cache["input_data"] = self.config.input_data
         page_cache["extra_data"] = self.config.table_data
@@ -254,6 +255,7 @@ class MappingAssistantUI(QtWidgets.QWidget):
 
     def switch_previous_page(self):
         self.filter_table_layout_v.removeWidget(self.table_view)
+        self.table_view.deleteLater()
         page_cache = self.config.pop_page_cache()
         self.config.input_data = page_cache["input_data"]
         self.config.table_data = page_cache["extra_data"]

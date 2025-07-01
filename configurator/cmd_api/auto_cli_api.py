@@ -14,6 +14,7 @@
 # limitations under the License.
 ############################################################################
 import os
+from typing import Union, Tuple
 from cmd_adaptor.func_logic_layer.load_save_project import LoadAndSaveProject
 from cmd_adaptor.func_logic_layer.import_func.import_asw_handler import ImportAswHandler
 from cmd_adaptor.func_logic_layer.mapping_func.task_mapping_cmd_func import TaskMappingCmdFunc
@@ -22,12 +23,21 @@ from cmd_adaptor.func_logic_layer.validation_func.validate_cmd_func import Valid
 from cmd_adaptor.func_logic_layer.export_func.export_file_func import ExportFileFunc
 from cmd_adaptor.func_logic_layer.bsw_func.os_cmd_func import OsCmdFunc
 from cmd_adaptor.func_logic_layer.os_cfg_cmd_func import OsConfigureCmdFunc
-from cmd_adaptor.func_logic_layer.import_func.import_mcal_handler import ImportMcalHandler
+from cmd_adaptor.func_logic_layer.mapping_func.data_mapping_cmd_func import DataMappingCmdFunc
+from cmd_adaptor.func_logic_layer.mapping_func.port_mapping_cmd_func import PortMappingCmdFunc
+from cmd_adaptor.func_logic_layer.mapping_func.service_mapping_cmd_func import ServiceMappingCmdFunc
 from cmd_adaptor.func_logic_layer.mapping_func.schedule_table_mapping_cmd_func import ScheduleTableCmdFunc
 from cmd_adaptor.cmd_interaction.cmd_logger import logger
 
 
 class AutoCliApi:
+
+    class Args:
+        def __setattr__(self, name: str, value):
+            self.__dict__[name] = value
+
+        def __getattr__(self, name: str):
+            return self.__dict__[name]
 
     @classmethod
     def load_project(cls, project_file_path) -> bool:
@@ -69,6 +79,58 @@ class AutoCliApi:
         return ImportAswHandler.import_asw(asw_dir)
 
     @classmethod
+    def import_cdd(cls, cdd_path_list: list) -> bool:
+        """import the cdd file according to the file path.
+
+        Args:
+            cdd_path_list (list): the list of cdd path.
+
+        Returns:
+            bool: True(import sucessfully), False:(import failed).
+        """
+        try:
+            for i in range(len(cdd_path_list)):
+                file_path = os.path.abspath(cdd_path_list[i])
+                cdd_path_list[i] = file_path
+                if not os.path.exists(file_path):
+                    logger.error(f"cdd file path {file_path} not exsit")
+                    return False
+            from cmd_adaptor.func_logic_layer.import_func.import_cdd_handler import ImportCddHandler
+
+            ImportCddHandler.import_cdd(cdd_path_list)
+        except Exception:
+            logger.exception("Import dbc/ldf Failed")
+            return False
+        return True
+
+    @classmethod
+    def import_dbc_ldf(cls, file_path_list: list, ecu_instance, is_add_channel_name=False) -> bool:
+        """import the dbc according to the list of dbc info.
+
+        Args:
+            file_path_list (list): the list of dbc or ldf file path.
+
+            ecu_instance (str): ecu instance.
+
+        Returns:
+            bool: True(import sucessfully), False:(import failed)
+        """
+        try:
+            for i in range(len(file_path_list)):
+                file_path = os.path.abspath(file_path_list[i])
+                file_path_list[i] = file_path
+                if not os.path.exists(file_path):
+                    logger.error(f"dbc or ldf file path {file_path} not exsit")
+                    return False
+            from cmd_adaptor.func_logic_layer.import_func.import_dbc_and_ldf_handler import ImportDbcLdfHandler
+
+            ImportDbcLdfHandler.import_dbc_ldf(file_path_list, ecu_instance, is_add_channel_name=is_add_channel_name)
+        except Exception:
+            logger.exception("Import dbc/ldf Failed")
+            return False
+        return True
+
+    @classmethod
     def import_mcal(cls, mcal_path: str, mcal_module_list: list) -> bool:
         """import the mcal file path according to the mcal path.
 
@@ -86,6 +148,8 @@ class AutoCliApi:
             logger.error("mcal module list is invalid, please check mcal module list what you want import")
             return False
         try:
+            from cmd_adaptor.func_logic_layer.import_func.import_mcal_handler import ImportMcalHandler
+
             ImportMcalHandler.import_mcal_arxml(mcal_path, mcal_module_list)
         except Exception:
             return False
@@ -142,7 +206,161 @@ class AutoCliApi:
         return TaskMappingCmdFunc.auto_task_mapping_by_file(excel_file)
 
     @classmethod
-    def excute_validation(cls, validation_module_list: list, validation_level: str) -> dict:
+    def excute_data_mapping(cls, data_mapping_info_list: list) -> bool:
+        """excute the data mapping by the list of data mapping info
+
+        Args:
+            data_mapping_info_list (list): the list of data_mapping_info (the dict of containing
+                                            the below data mapping params).
+
+                component (str): the component string (format eg: SWC1,SWC2,SWC3).
+
+                direction (str): the direction (Rx, Tx).
+
+                prefix (str): optional param, the prefix word to filter.
+
+                postfix (str): optional param, the postfix word to filter.
+
+                ignore_match_whole_word (bool): optional param, ignore match the whole word or not.
+
+                ignore_match_case (bool): optional param,  ignore match case or not.
+
+                log_save (bool): optional param, save the log or not.
+                match_compatibility (bool): optional param, match compatibility of data type size.
+                file (str): optional param, excel file path, auto data mapping by excel file if set.
+
+        Returns:
+            bool: True(excute sucessfully), False:(excute failed)
+        """
+        for data_mapping_info in data_mapping_info_list:
+            args = cls.Args()
+            if not data_mapping_info.get("file", None):
+                if "component" not in data_mapping_info:
+                    logger.error("data_mapping_info should contain component")
+                    return False
+                if "direction" not in data_mapping_info:
+                    logger.error("data_mapping_info should contain direction")
+                    return False
+                args.component = data_mapping_info.get("component")
+                args.direction = data_mapping_info.get("direction")
+                if not args.component or not args.direction:
+                    logger.error("component and direction should not be empty")
+                    return False
+            args.component = data_mapping_info.get("component", [])
+            args.direction = data_mapping_info.get("direction", None)
+            args.prefix = data_mapping_info.get("prefix", "")
+            args.postfix = data_mapping_info.get("postfix", "")
+            args.ignore_match_whole_word = data_mapping_info.get("ignore_match_whole_word", False)
+            args.ignore_match_case = data_mapping_info.get("ignore_match_case", False)
+            args.allow_multi_signal = data_mapping_info.get("allow_multi_signal", False)
+            args.log_save = data_mapping_info.get("log_save", False)
+            args.match_compatibility = data_mapping_info.get("match_compatibility", False)
+            args.File = data_mapping_info.get("file", None)
+            DataMappingCmdFunc.auto_data_mapping(args)
+        return True
+
+    @classmethod
+    def excute_data_mapping_all_logs_save(cls) -> bool:
+        """Save DataMapping all logs to a excel file.
+           Called after function excute_data_mapping().
+
+        Returns:
+            bool: True(excute sucessfully), False:(excute failed)
+        """
+        DataMappingCmdFunc.auto_data_mapping_all_logs_save()
+        return True
+
+    @classmethod
+    def excute_port_mapping(cls, port_mapping_info_list: list) -> bool:
+        """excute the port mapping by the list of port mapping info
+
+        Args:
+            port_mapping_info_list (list): the list of port_mapping_info(the dict of containing
+                                            the below port mapping params).
+
+                component (str): optional param, the component to excute.
+
+                direction (str): optional param, the direction (Rx, Tx).
+
+                prefix (str): optional param, the prefix word to filter.
+
+                postfix (str): optional param, the postfix word to filter.
+
+                allow_split (bool): optional param, whether allow split or not.
+
+                allow_merge (bool): optional param, whether allow merge or not.
+
+                ignore_match_case (bool): optional param, ignore match case or not.
+
+                ignore_match_whole_word (bool): optional param, ignore match the whole word or not.
+
+        Returns:
+            bool: True(excute sucessfully), False:(excute failed)
+        """
+        for port_mapping_info in port_mapping_info_list:
+            args = cls.Args()
+            args.component = port_mapping_info.get("component", "")
+            args.direction = port_mapping_info.get("direction", "Tx")
+            args.prefix = port_mapping_info.get("prefix", "")
+            args.postfix = port_mapping_info.get("postfix", "")
+            args.allow_split = port_mapping_info.get("allow_split", False)
+            args.allow_merge = port_mapping_info.get("allow_merge", False)
+            args.ignore_match_whole_word = port_mapping_info.get("ignore_match_whole_word", False)
+            args.ignore_match_case = port_mapping_info.get("ignore_match_case", False)
+            args.Mapping = "AutoPortMapping"
+            args.log_save = port_mapping_info.get("log_save", False)
+            args.match_compatibility = port_mapping_info.get("match_compatibility", False)
+            PortMappingCmdFunc.app_port_mapping(args)
+
+        return True
+
+    @classmethod
+    def excute_service_mapping(cls, service_mapping_info_list: list) -> bool:
+        """excute the service mapping by the list of service mapping info
+
+        Args:
+            service_mapping_info_list (list): the list of service_mapping_info(the dict of containing
+                                            the below service mapping params).
+
+                component (str): optional param, the component to excute.
+
+                direction (str): optional param, the direction (Rx, Tx).
+
+                prefix (str): optional param, the prefix word to filter.
+
+                postfix (str): optional param, the postfix word to filter.
+
+                allow_split (bool): optional param, whether allow split or not.
+
+                allow_merge (bool): optional param, whether allow merge or not.
+
+                ignore_match_case (bool): optional param, ignore match case or not.
+
+                ignore_match_whole_word (bool): optional param, ignore match the whole word or not.
+
+        Returns:
+            bool: True(excute sucessfully), False:(excute failed)
+        """
+
+        for service_mapping_info in service_mapping_info_list:
+            args = cls.Args()
+            args.component = service_mapping_info.get("component", "")
+            args.direction = service_mapping_info.get("direction", "Tx")
+            args.prefix = service_mapping_info.get("prefix", "")
+            args.postfix = service_mapping_info.get("postfix", "")
+            args.allow_split = service_mapping_info.get("allow_split", False)
+            args.allow_merge = service_mapping_info.get("allow_merge", False)
+            args.ignore_match_whole_word = service_mapping_info.get("ignore_match_whole_word", False)
+            args.ignore_match_case = service_mapping_info.get("ignore_match_case", False)
+            args.Mapping = "AutoServiceMapping"
+            args.log_save = service_mapping_info.get("log_save", False)
+            args.match_compatibility = service_mapping_info.get("match_compatibility", False)
+            ServiceMappingCmdFunc.service_port_mapping(args)
+
+        return True
+
+    @classmethod
+    def excute_validation(cls, validation_module_list: list, validation_level: str) -> Union[bool, Tuple[dict, dict]]:
         """excute the validation by the list of module and validation level.
 
         Args:
@@ -167,7 +385,7 @@ class AutoCliApi:
     @classmethod
     def excute_generation(
         cls, generation_module_list: list, is_debug: bool = False, forced_codegen: bool = True
-    ) -> dict:
+    ) -> bool:
         """excute the generation by the list of module.
 
         Args:

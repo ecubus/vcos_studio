@@ -21,7 +21,6 @@ from cmd_adaptor.func_logic_layer.import_func.import_mcal_handler import ImportM
 from cmd_adaptor.func_logic_layer.generate_func.generate_cmd_func import GenerateCmdFunc
 from cmd_adaptor.func_logic_layer.validation_func.validate_cmd_func import ValidateCmdFunc
 from cmd_adaptor.func_logic_layer.upgrade_func.upgrade_cmd_func import UpgradeCmdFunc
-from func_module.health_monitor.perf_record import log_function_stats
 from basic_func_module.file_validation.arxml_validator import ArxmlFileValidator
 from func_module.module_management.base_config import BASE_CONFIG_PATH
 
@@ -55,6 +54,18 @@ class CmdInteraction:
             asw_dir_list = args.asw
             self.execute_auto_import_asw_command(project_file_path, asw_dir_list)
             pass
+        if hasattr(args, "dbc_ldf") and args.node:
+            is_add_channel_name = False
+            if hasattr(args, "acn"):
+                is_add_channel_name = args.acn
+            if args.dbc_ldf:
+                file_list = args.dbc_ldf.split()
+            else:
+                file_list = []
+            self.execute_auto_import_dbc_ldf_command(project_file_path, file_list, args.node, is_add_channel_name)
+        if hasattr(args, "cdd") and args.cdd:
+            cdd_path = args.cdd
+            self.execute_auto_import_cdd_command([cdd_path], project_file_path)
         if hasattr(args, "mcal") and args.mcal:
             if (
                 args.module
@@ -66,10 +77,23 @@ class CmdInteraction:
             self.execute_auto_import_mcal_command(project_file_path, mcal_arxml_path, need_to_import_mcal_module_list)
         return True
 
-    @log_function_stats(["Studio性能统计", "导入ASW.arxml耗时"])
+    def execute_auto_import_dbc_ldf_command(self, project_file_path, file_list, node, is_add_channel_name):
+        from cmd_adaptor.func_logic_layer.import_func.import_dbc_and_ldf_handler import ImportDbcLdfHandler
+
+        import_dbc_ldf_func = ImportDbcLdfHandler()
+        import_dbc_ldf_func.execute_auto_import_dbc_ldf(
+            project_file_path, file_list, node, is_add_channel_name=is_add_channel_name
+        )
+
     def execute_auto_import_asw_command(self, project_file_path, asw_dir_list):
         import_asw_handler = ImportAswHandler()
         import_asw_handler.execute_auto_import_asw(project_file_path, asw_dir_list)
+
+    def execute_auto_import_cdd_command(self, cdd_path, project_file_path):
+        from cmd_adaptor.func_logic_layer.import_func.import_cdd_handler import ImportCddHandler
+
+        import_asw_handler = ImportCddHandler()
+        import_asw_handler.execute_auto_import_cdd(cdd_path, project_file_path)
 
     def execute_auto_import_mcal_command(self, project_file_path, mcal_arxml_file_path, selected_mcal_module_list=None):
         import_asw_handler = ImportMcalHandler()
@@ -82,6 +106,20 @@ class CmdInteraction:
         if args.Project and args.Mapping == "AutoTaskMappingByFile" and args.File:
             result = self.execute_auto_task_mapping_by_file_command(args.Project, args.File)
             return result
+        elif args.Project and args.Mapping == "AutoTaskMappingByParam":
+            result = self.execute_auto_task_mapping_by_param_command(
+                args.Project, args.TaskName, args.SwcName, args.RunnableName, args.PositionInTask, args.EventName
+            )
+            return result
+        elif args.Project and args.Mapping == "AutoPortMapping":
+            result = self.execute_auto_app_port_mapping_command(args)
+            return True
+        elif args.Project and args.Mapping == "AutoServiceMapping":
+            result = self.execute_auto_service_port_mapping_command(args)
+            return True
+        elif args.Project and args.Mapping == "AutoDataMapping" and (args.component or args.File):
+            result = self.execute_auto_data_mapping_command(args)
+            return True
         else:
             logger.error("Command error!")
             return False
@@ -94,12 +132,28 @@ class CmdInteraction:
         )
         return result
 
-    @log_function_stats(["Studio性能统计", "auto task mapping脚本执行耗时"])
+    def execute_auto_app_port_mapping_command(self, args) -> bool:
+        from cmd_adaptor.func_logic_layer.mapping_func.port_mapping_cmd_func import PortMappingCmdFunc
+
+        result = PortMappingCmdFunc.execute_auto_app_port_mapping_command(args)
+        return result
+
     def execute_auto_task_mapping_by_file_command(self, project_path, excel_path) -> bool:
         result = TaskMappingCmdFunc.execute_auto_task_mapping_by_file(project_path, excel_path)
         return result
 
-    @log_function_stats(["Studio性能统计", "Validation校验耗时"])
+    def execute_auto_service_port_mapping_command(self, args) -> bool:
+        from cmd_adaptor.func_logic_layer.mapping_func.service_mapping_cmd_func import ServiceMappingCmdFunc
+
+        result = ServiceMappingCmdFunc.execute_auto_service_port_mapping_command(args)
+        return result
+
+    def execute_auto_data_mapping_command(self, args) -> bool:
+        from cmd_adaptor.func_logic_layer.mapping_func.data_mapping_cmd_func import DataMappingCmdFunc
+
+        result = DataMappingCmdFunc.execute_auto_data_mapping_command(args)
+        return result
+
     def execute_validation_command(self, project_path, module_list=[]) -> bool:
         result = False
         if project_path:
@@ -107,7 +161,6 @@ class CmdInteraction:
             result = ValidateCmdFunc.execute_auto_validation(project_path, module_list)
         return result
 
-    @log_function_stats(["Studio性能统计", "动态代码生成耗时"])
     def execute_generate_command(
         self, project_path, module_list, is_debug: bool = False, forced_codegen: bool = True
     ) -> bool:
@@ -121,6 +174,12 @@ class CmdInteraction:
             logger.debug(f"generate c code failed {result}")
         else:
             logger.debug(f"generate c code success {result}")
+        return result
+
+    def execute_swc_generate_command(self, project_path, selected_swcs) -> bool:
+        result = False
+        if project_path:
+            result = GenerateCmdFunc.execute_auto_generate_swc_template(project_path, selected_swcs)
         return result
 
     def execute_upgrade_command(self, project_path) -> bool:

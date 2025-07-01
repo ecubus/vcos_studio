@@ -26,7 +26,6 @@ from cmd_adaptor.func_logic_layer.load_save_project import LoadAndSaveProject
 from func_module.project_management.studio_cfg_handler import StudioCfgHandler
 from func_module.generator import generator as vcos_generator
 from func_module.generator.common.common import generator_utility
-from func_module.health_monitor.perf_record import log_function_stats
 from func_module.module_management.user_plugin_manager.user_plugin_manager import UserPluginManager
 from cmd_adaptor.func_logic_layer.validation_func.validate_cmd_func import ValidateCmdFunc
 
@@ -40,7 +39,6 @@ class GenerateCmdFunc:
         pass
 
     @classmethod
-    @log_function_stats(["代码生成", "命令行模块C代码生成"])
     def execute_auto_generate_c_code(cls, project_path, module_list, is_debug=False, forced_codegen=False) -> bool:
         GenerateCmdFunc.vcos_studio_init_finish()
         logger.info("Loading project file...")
@@ -123,7 +121,6 @@ class GenerateCmdFunc:
         return result
 
     @classmethod
-    @log_function_stats(["Studio性能统计", "动态代码生成耗时"])
     def generate_c_code(cls, sys_info_class, codegen_autosar_dict, is_debug=False, forced_codegen=False) -> bool:
         if is_debug:
             data_management.sys_info_class.mode = "debug"
@@ -135,6 +132,32 @@ class GenerateCmdFunc:
             data_management.sys_info_class.incremental_generation = True
         result = vcos_generator.generate_c_code(sys_info_class, codegen_autosar_dict, progress_signal)
         return result
+
+    @classmethod
+    def execute_auto_generate_swc_template(cls, project_path, selected_swc) -> bool:
+        result = LoadAndSaveProject.load_project(project_path)
+        if result is False:
+            return False
+        codegen_autosar_dict = vcos_generator.init_codegen_autosar_dict(data_management, True)
+        all_swc_list = vcos_generator.get_swc_list_for_template_gereration(codegen_autosar_dict["asw_autosar_dict"])
+        if not selected_swc:
+            codegen_swcs = all_swc_list
+        else:
+            from cmd_adaptor.cmd_interaction.cmd_interaction import CmdInteraction
+
+            selected_swc_list = CmdInteraction.handle_cmd_input_modules(selected_swc)
+            codegen_swcs = list(set(all_swc_list) & set(selected_swc_list))
+            data_management.sys_info_class.codegen_swcs = codegen_swcs
+        ret = vcos_generator.generate_swc_template(
+            data_management.sys_info_class, codegen_autosar_dict, codegen_swcs, None
+        )
+        if ret:
+            logger.info("start saving arxml ...")
+            LoadAndSaveProject.generate_save_project()
+            logger.info("finish saving arxml ...")
+        else:
+            logger.error("generate swc template failed")
+        return ret
 
     @classmethod
     def get_generate_module_list(cls, module_list, enable_modules):

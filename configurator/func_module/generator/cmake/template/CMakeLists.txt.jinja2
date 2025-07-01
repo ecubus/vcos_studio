@@ -37,13 +37,13 @@ set(GENDATA_SRC_FILES ${GENDATA_SRC_FILES} CACHE INTERNAL "")
 set(GENDATA_INC_DIRS
 {%- for module_name in get_enable_module_list() %}
 {%- if module_name == "Os"%}
-    ${GENDATA_DIR}/appl
+    ${GENDATA_DIR}/Appl
     ${GENDATA_DIR}/Os
     ${GENDATA_DIR}/Memmap
 {%- elif module_name == "EcuM"%}
-    ${GENDATA_DIR}/ServM/EcuM
+    ${GENDATA_DIR}/sysm/EcuM
 {%- elif module_name == "BswM"%}
-    ${GENDATA_DIR}/ServM/BswM
+    ${GENDATA_DIR}/sysm/BswM
 {%- elif module_name == "TcpIp"%}
     ${GENDATA_DIR}/Lwip
     ${GENDATA_DIR}/TcpIp

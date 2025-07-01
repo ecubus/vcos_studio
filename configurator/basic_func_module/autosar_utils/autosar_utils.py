@@ -41,9 +41,9 @@ class MemmapCategory(Enum):
 
 
 class VariableInitCategory(Enum):
-    NO_INIT = "NO_INIT"
-    ZERO_INIT = "ZERO_INIT"
-    INIT = "INIT"  # non-zero init values
+    NO_INIT = "BSS"
+    ZERO_INIT = "BSS"
+    INIT = "DATA"  # non-zero init values
 
 
 def topological_sort(dependencies):
@@ -274,9 +274,24 @@ class AutosarUtils:
     r_param_comspec_map = {}
     all_osa = []
     all_osa_set = set()
+    rte_sch_tbl = {}
+    os_counter = {}
     core_osa_map = {}
     iso_call_func = {}
     iso_call_func_include_header_file = {}
+
+    @classmethod
+    def get_os_counter(cls):
+        return cls.os_counter
+
+    @classmethod
+    def __init_os_counter_cfg(cls, os_cfg):
+        cls.os_counter.clear()
+        for osa_name, osa_info in os_cfg["OsApplications"].items():
+            counter_info = osa_info.get("OsAppCounter", {})
+            if not counter_info:
+                continue
+            cls.os_counter[osa_name] = counter_info
 
     @classmethod
     def __init_data_mapping_cfg(cls, rte_cfg):
@@ -331,7 +346,7 @@ class AutosarUtils:
             cls.iso_call_func[osa_name][func_name] = func_info
 
     @classmethod
-    def __init_global_vars_before_code_gen(cls, rte_cfg, isolate_cfg):
+    def __init_global_vars_before_code_gen(cls, rte_cfg, isolate_cfg, os_cfg):
         cls.__rte_codegen_dict.clear()
         cls.sr_p_port_path_to_asw_port_dict.clear()
         cls.sr_r_port_path_to_asw_port_dict.clear()
@@ -351,6 +366,8 @@ class AutosarUtils:
         cls.is_ea_opt_enabled = bool(rte_cfg) and rte_cfg.get("RteGeneration", {}).get("RteEaOptimization", False)
         cls.rte_dlog_enabled = bool(rte_cfg) and rte_cfg.get("RteGeneration", {}).get("RteDevErrorDetect", False)
         cls.__init_data_mapping_cfg(rte_cfg)
+        cls.rte_sch_tbl.clear()
+        cls.__init_os_counter_cfg(os_cfg)
 
     @classmethod
     def __get_memmap_category(cls, writers, readers):
@@ -967,6 +984,7 @@ class AutosarUtils:
             "port_interface_info": port_interface_info,
             "result_run": cls.__parse_cs_rport_result_runnable(access, runnable_entity),
             "memmap": {},
+            "schedule_table": {},
             # 'is_direct_call': True
         }
         rport_dict["return_mode"] = cls.__parse_cs_rport_return_mode(access)
@@ -1064,6 +1082,29 @@ class AutosarUtils:
         if rport_dict["ioc"] and connected_ports:
             rport_dict["set_events"] = cls.__parse_cs_port_set_events_by_connected_ports(connected_ports)
             rport_dict["queue"] = cls.__pack_cs_ioc_client_queue_info(rport_dict, connected_ports)
+
+        os_counter = cls.os_counter.get(rport_dict["osapplication"], {})
+        if os_counter and rport_dict["ioc"] and rport_dict["timeout"] > 0.0:
+            if rport_dict["return_mode"] == "polling":
+                rport_dict["schedule_table"]["name"] = f"Rte_St_{swc_name}_{new_port_name}"
+                rport_dict["schedule_table"]["id"] = f'OS_SCHEDTABLE_{rport_dict["schedule_table"]["name"].upper()}_ID'
+                rport_dict["schedule_table"]["task"] = rport_dict["task"][0]
+                rport_dict["schedule_table"]["counter"] = os_counter
+                rport_dict["schedule_table"]["timeout"] = rport_dict["timeout"]
+                rport_dict["schedule_table"]["trigger_task"] = None
+                rport_dict["schedule_table"]["trigger_event"] = None
+                if rport_dict["schedule_table"]["id"] not in cls.rte_sch_tbl:
+                    cls.rte_sch_tbl[rport_dict["schedule_table"]["id"]] = rport_dict["schedule_table"]
+            elif rport_dict["return_mode"] == "waiting":
+                rport_dict["schedule_table"]["name"] = f"Rte_St_{swc_name}_{new_port_name}"
+                rport_dict["schedule_table"]["id"] = f'OS_SCHEDTABLE_{rport_dict["schedule_table"]["name"].upper()}_ID'
+                rport_dict["schedule_table"]["task"] = rport_dict["task"][0]
+                rport_dict["schedule_table"]["counter"] = os_counter
+                rport_dict["schedule_table"]["timeout"] = rport_dict["timeout"]
+                rport_dict["schedule_table"]["trigger_task"] = rport_dict["task"][0]
+                rport_dict["schedule_table"]["trigger_event"] = f'Rte_Ev_Timeout_{rport_dict["task"][0]}'
+                if rport_dict["schedule_table"]["id"] not in cls.rte_sch_tbl:
+                    cls.rte_sch_tbl[rport_dict["schedule_table"]["id"]] = rport_dict["schedule_table"]
         return rport_dict
 
     @classmethod
@@ -1576,7 +1617,8 @@ class AutosarUtils:
         port_path = utils.get_valueOf(variable_access.ACCESSED_VARIABLE.AUTOSAR_VARIABLE_IREF.PORT_PROTOTYPE_REF)
         data_element = variable_access.find(data_element_path)
         if not data_element:
-            raise Exception(f"The data element <{data_element_path}> does not exist!")
+            logger.error(f"The data element <{data_element_path}> does not exist!")
+            return
         port_data_element_key = f"{port_path}{data_element_path_short}"
         if cls.get_if_data_element_is_queued(data_element):
             if access_type == "Write":
@@ -3780,7 +3822,7 @@ class AutosarUtils:
     @classmethod
     def get_if_data_element_is_queued(cls, data_element):
         is_queued = False
-        if not data_element.SW_DATA_DEF_PROPS:
+        if not hasattr(data_element, "SW_DATA_DEF_PROPS") or not data_element.SW_DATA_DEF_PROPS:
             return is_queued
         try:
             sw_impl_policy = getattr(
@@ -3869,6 +3911,9 @@ class AutosarUtils:
             access_point.ACCESSED_VARIABLE.AUTOSAR_VARIABLE_IREF.TARGET_DATA_PROTOTYPE_REF
         )
         data_element = access_point.find(data_element_path)
+        if not data_element:
+            return {}
+
         data_name = data_element_path.split("/")[-1]
         is_queued = cls.get_if_data_element_is_queued(data_element)
         pport_path = utils.get_valueOf(access_point.ACCESSED_VARIABLE.AUTOSAR_VARIABLE_IREF.PORT_PROTOTYPE_REF)
@@ -3980,6 +4025,8 @@ class AutosarUtils:
         )
         data_element_path_short = "/".join(data_element_path.split("/")[-2:])
         data_element = access_point.find(data_element_path)
+        if not data_element:
+            return {}
         data_name = data_element_path.split("/")[-1]
         is_queued = cls.get_if_data_element_is_queued(data_element)
         rport_path = utils.get_valueOf(access_point.ACCESSED_VARIABLE.AUTOSAR_VARIABLE_IREF.PORT_PROTOTYPE_REF)
@@ -4052,6 +4099,7 @@ class AutosarUtils:
             "constraints": {},
             "compu_methods": {},
             "data_mapping_m_to_n": "0",
+            "schedule_table": {},
         }
         if type == "Explicit Receiver":
             if data_element_path in cls.port_prototypes[rport_path]:
@@ -4084,6 +4132,17 @@ class AutosarUtils:
                 runnable_ref
             ]["timeout"]
             # rport_dict['queue_size'] = cls.port_prototypes[rport_path][data_element_path]['queue_size']
+            os_counter = cls.os_counter.get(rport_dict["osapplication"], {})
+            if os_counter and rport_dict["timeout"] > 0.0:
+                rport_dict["schedule_table"]["name"] = f'Rte_St_{rport_dict["swc_port_var"]}'
+                rport_dict["schedule_table"]["id"] = f'OS_SCHEDTABLE_{rport_dict["schedule_table"]["name"].upper()}_ID'
+                rport_dict["schedule_table"]["task"] = rport_dict["task"][0]
+                rport_dict["schedule_table"]["counter"] = os_counter
+                rport_dict["schedule_table"]["timeout"] = rport_dict["timeout"]
+                rport_dict["schedule_table"]["trigger_task"] = rport_dict["task"][0]
+                rport_dict["schedule_table"]["trigger_event"] = f'Rte_Ev_Timeout_{rport_dict["task"][0]}'
+                if rport_dict["schedule_table"]["id"] not in cls.rte_sch_tbl:
+                    cls.rte_sch_tbl[rport_dict["schedule_table"]["id"]] = rport_dict["schedule_table"]
         if not is_queued:
             rport_dict["required_com_specs"] = cls.parse_sr_rport_required_com_specs(
                 access_point.find(rport_path), data_element_path
@@ -4150,6 +4209,8 @@ class AutosarUtils:
                             pport = cls.parse_sr_pport_access_point(
                                 access_point, "Explicit Sender", runnable_entity, mapping_sets
                             )
+                            if not pport:
+                                continue
                             cls.update_sr_cs_port_multi_runnable_access(pports_dict, pport)
                             cls.update_swc_info_from_port(pport, access_point, info, "SR")
                     if runnable_entity.DATA_WRITE_ACCESSS:
@@ -4157,6 +4218,8 @@ class AutosarUtils:
                             pport = cls.parse_sr_pport_access_point(
                                 access_point, "Implicit Sender", runnable_entity, mapping_sets
                             )
+                            if not pport:
+                                continue
                             pports_dict.update({pport["port_key"]: pport})
                             cls.update_swc_info_from_port(pport, access_point, info, "SR")
                     if runnable_entity.MODE_SWITCH_POINTS:
@@ -4215,6 +4278,8 @@ class AutosarUtils:
                                 False,
                                 runnable_entity.WAIT_POINTS,
                             )
+                            if not rport:
+                                continue
                             cls.update_sr_cs_port_multi_runnable_access(rports_dict, rport)
                             cls.update_swc_info_from_port(rport, access_point, info, "SR")
                     if runnable_entity.DATA_RECEIVE_POINT_BY_VALUES:
@@ -4222,6 +4287,8 @@ class AutosarUtils:
                             rport = cls.parse_sr_rport_access_point(
                                 access_point, "Explicit Receiver", runnable_entity, mapping_sets, True
                             )
+                            if not rport:
+                                continue
                             cls.update_sr_cs_port_multi_runnable_access(rports_dict, rport)
                             cls.update_swc_info_from_port(rport, access_point, info, "SR")
                     if runnable_entity.DATA_READ_ACCESSS:
@@ -4229,6 +4296,8 @@ class AutosarUtils:
                             rport = cls.parse_sr_rport_access_point(
                                 access_point, "Implicit Receiver", runnable_entity, mapping_sets
                             )
+                            if not rport:
+                                continue
                             rports_dict.update({rport["port_key"]: rport})
                             cls.update_swc_info_from_port(rport, access_point, info, "SR")
         for rport_prototype in sw_component_type.PORTS.R_PORT_PROTOTYPE:
@@ -5435,7 +5504,7 @@ class AutosarUtils:
         os_cfg = rte_cfg.get("os_cfg", {})
         isolate_cfg = rte_cfg.get("isolate_cfg", {"module": {}, "iso_func": {}})
 
-        cls.__init_global_vars_before_code_gen(rte_cfg, isolate_cfg)
+        cls.__init_global_vars_before_code_gen(rte_cfg, isolate_cfg, os_cfg)
         if not cls.__pack_asw_auxiliary_data(asw_autosar_dict, task_mappings, cfg_dict):
             return
         cls.__resolve_swc_data(cls.__rte_codegen_dict)
@@ -6780,7 +6849,7 @@ class AutosarUtils:
         is_rw = port_signal_group_list[0][0]["data_mapping_m_to_n"] in {"1n", "mn"}
 
         if has_more_than_two_cores:
-            spinlock_id = "OS_SPINLOCK_Rte_Com_Global_RW" if is_rw else "OS_SPINLOCK_Rte_Com_Global"
+            spinlock_id = ("OS_SPINLOCK_Rte_Com_Global_RW" if is_rw else "OS_SPINLOCK_Rte_Com_Global").upper()
             spinlock_cfg = {
                 "lock_id": spinlock_id,
                 "access_osa": cls.all_osa,
@@ -6793,7 +6862,7 @@ class AutosarUtils:
                 f"OS_SPINLOCK_Rte_Com_Core_{sorted_core_id[0]}_{sorted_core_id[1]}_RW"
                 if is_rw
                 else f"OS_SPINLOCK_Rte_Com_Core_{sorted_core_id[0]}_{sorted_core_id[1]}"
-            )
+            ).upper()
             access_osa = []
             for core_id in sorted_core_id:
                 access_osa.extend(cls.core_osa_map[core_id])
@@ -7489,7 +7558,7 @@ class AutosarUtils:
                 continue
             if port["core_id"] != p_core_id:
                 spinlock_cfg = {
-                    "lock_id": f'OS_SPINLOCK_Rte_{port["swc_port_var"]}_ID',
+                    "lock_id": (f'OS_SPINLOCK_Rte_{port["swc_port_var"]}_ID').upper(),
                     "access_osa": [p_port["osapplication"], port["osapplication"]],
                     "lock_metohd": "LOCK_CAT2_INTERRUPTS",
                     "is_rw": False,
@@ -7550,7 +7619,7 @@ class AutosarUtils:
                 break
         if has_inter_core:
             spinlock_cfg = {
-                "lock_id": f'OS_SPINLOCK_Rte_{r_port["swc_port_var"]}_ID',
+                "lock_id": (f'OS_SPINLOCK_Rte_{r_port["swc_port_var"]}_ID').upper(),
                 "access_osa": sorted(
                     list(set([p["osapplication"] for p in all_q_participant_ports if p["osapplication"]]))
                 ),
@@ -7682,7 +7751,7 @@ class AutosarUtils:
                     if curr_port["is_p"]:
                         p_port = curr_port
                         break
-            spinlock_cfg["lock_id"] = f"OS_SPINLOCK_Rte_{p_port['swc_port_var']}_ID"
+            spinlock_cfg["lock_id"] = (f"OS_SPINLOCK_Rte_{p_port['swc_port_var']}_ID").upper()
             spinlock_cfg["access_osa"] = sorted(
                 list(set([p["osapplication"] for p in all_non_q_participant_ports if p["osapplication"]]))
             )
@@ -7696,7 +7765,7 @@ class AutosarUtils:
                     if curr_port["is_p"]:
                         r_port = curr_port
                         break
-            spinlock_cfg["lock_id"] = f"OS_SPINLOCK_Rte_{r_port['swc_port_var']}_ID"
+            spinlock_cfg["lock_id"] = (f"OS_SPINLOCK_Rte_{r_port['swc_port_var']}_ID").upper()
             spinlock_cfg["access_osa"] = sorted(
                 list(set([p["osapplication"] for p in all_non_q_participant_ports if p["osapplication"]]))
             )
@@ -7979,12 +8048,12 @@ class AutosarUtils:
                         # 用pport的名字
                         init_value_name = (
                             f"Rte_C_{port['arg']['datatype']['name']}_"
-                            "{port['component']}_{port['port_prototype']}_{port['data_element']}"
+                            f"{port['component']}_{port['port_prototype']}_{port['data_element']}"
                         )
                     elif port["m_to_n"] == "n1":
                         init_value_name = (
                             f"Rte_C_{port['arg']['datatype']['name']}_"
-                            "{port['conn_asw_ports'][0]['component']}_{port['conn_asw_ports'][0]['name']}"
+                            f"{port['conn_asw_ports'][0]['component']}_{port['conn_asw_ports'][0]['name']}"
                         )
                     elif port["m_to_n"] == "mn":
                         fst_port = port["sr_port_group"][0]
@@ -7995,7 +8064,7 @@ class AutosarUtils:
                     # 未连接时，用当前port的信息
                     init_value_name = (
                         f"Rte_C_{port['arg']['datatype']['name']}_"
-                        "{port['component']}_{port['port_prototype']}_{port['data_element']}"
+                        f"{port['component']}_{port['port_prototype']}_{port['data_element']}"
                     )
             else:
                 # rport
@@ -8004,12 +8073,12 @@ class AutosarUtils:
                         # 用pport的名字
                         init_value_name = (
                             f"Rte_C_{port['arg']['datatype']['name']}_"
-                            "{port['conn_asw_ports'][0]['component']}_{port['conn_asw_ports'][0]['name']}"
+                            f"{port['conn_asw_ports'][0]['component']}_{port['conn_asw_ports'][0]['name']}"
                         )
                     elif port["m_to_n"] == "n1":
                         init_value_name = (
                             f"Rte_C_{port['arg']['datatype']['name']}_"
-                            "{port['component']}_{port['port_prototype']}_{port['data_element']}"
+                            f"{port['component']}_{port['port_prototype']}_{port['data_element']}"
                         )
                     elif port["m_to_n"] == "mn":
                         fst_port = port["sr_port_group"][0]
@@ -8020,7 +8089,7 @@ class AutosarUtils:
                 else:
                     init_value_name = (
                         f"Rte_C_{port['arg']['datatype']['name']}_"
-                        "{port['component']}_{port['port_prototype']}_{port['data_element']}"
+                        f"{port['component']}_{port['port_prototype']}_{port['data_element']}"
                     )
         else:
             # 不是array/struct/union，就直接用datatype名字
@@ -8907,14 +8976,10 @@ class AutosarUtils:
                 provider_iref = assembly_connector.PROVIDER_IREF
                 requester_iref = assembly_connector.REQUESTER_IREF
                 p_port_connections.update(
-                    {
-                        provider_iref.TARGET_P_PORT_REF.valueOf_: requester_iref.TARGET_R_PORT_REF.valueOf_
-                    }
+                    {provider_iref.TARGET_P_PORT_REF.valueOf_: requester_iref.TARGET_R_PORT_REF.valueOf_}
                 )
                 r_port_connections.update(
-                    {
-                        requester_iref.TARGET_R_PORT_REF.valueOf_: provider_iref.TARGET_P_PORT_REF.valueOf_
-                    }
+                    {requester_iref.TARGET_R_PORT_REF.valueOf_: provider_iref.TARGET_P_PORT_REF.valueOf_}
                 )
         return p_port_connections, r_port_connections
 
@@ -9452,8 +9517,8 @@ class AutosarUtils:
         ):
             all_element_items_list.append(element_item_dict)
 
-    ################################################################################################################################
-    #### Parse autosar ecuc function
+    ####################################################################################################################
+    # Parse autosar ecuc function
     @classmethod
     def set_autosar_ecuc_pararm_value(cls, ecuc_autosar_param_obj: object, ecuc_def_pararm_obj: object, value) -> bool:
         original_tagname_ = ecuc_def_pararm_obj.original_tagname_

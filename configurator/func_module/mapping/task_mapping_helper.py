@@ -18,6 +18,7 @@ import math
 import functools
 from decimal import Decimal
 from func_module.health_monitor.logger import logger
+from func_module.mapping.schedule_table_mapping import ScheduleTableManager
 from basic_func_module.autosar_utils.autosar_util import AutosarUtil
 from basic_func_module.autosar_utils.autosar_utils import AutosarUtils
 from basic_func_module.autosar_utils.utils import (
@@ -1228,6 +1229,30 @@ class PortManager:
                 continue
             cls.__parse_sr_n_to_1_non_q_ioc_info(port, ioc_pport_cfg, os_spinlock_cfg)
         return os_spinlock_cfg
+
+
+    @classmethod
+    def get_rte_schedule_table_info(cls, r_port):
+        
+        def get_entry_point_dict(timeout_tick):
+            evt = r_port["schedule_table"].get("trigger_event", None)
+            if not evt:
+                return []
+            else:
+                return [(timeout_tick, {"task_name": r_port["schedule_table"].get("trigger_task", None), "event_name": evt,})]
+
+        timeout_tick = ScheduleTableManager.convert_milliseconds_to_tick(r_port["schedule_table"]["counter"]["OsSecondsPerTick"], r_port["schedule_table"]["timeout"])
+        return {
+            "name": r_port["schedule_table"]["name"],
+            "repeating": False,
+            "counter_ref": r_port["schedule_table"]["counter"]["path"],
+            "code_gen": False,
+            "duration": timeout_tick + 1,
+            "step_dict": {},
+            "expiry_point_dict": {timeout_tick: get_entry_point_dict(timeout_tick)},
+            "osa": r_port["osapplication"],
+        }
+
 
     @classmethod
     def get_all_spinlocks_cs(cls, pport, spinlock_cfgs):

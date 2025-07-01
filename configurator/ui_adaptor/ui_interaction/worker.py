@@ -143,7 +143,7 @@ class Task:
             self.future.cancel()
 
     def done(self, future):
-        if self.enable_progress and Task.progress_dialog:
+        if Task.progress_dialog:
             QtCore.QMetaObject.invokeMethod(
                 Task.progress_dialog,
                 "hide",  # type: ignore

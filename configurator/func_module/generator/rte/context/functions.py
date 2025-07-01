@@ -400,11 +400,6 @@ class Function(FunctionBase):
 
     @staticmethod
     @pass_context
-    def get_core_to_alarm_dict(context):
-        return context["core_to_alarm_dict"]
-
-    @staticmethod
-    @pass_context
     def get_server_runnable_list(context, server_swc_name):
         swc = context["server_swc"][server_swc_name]
         runnable_list = []
@@ -946,13 +941,13 @@ class Function(FunctionBase):
         def __get_memmap_infix(port):
             init_infix = port["arg"]["init_value"]["init_category"].value
             if port["buff_memmap_category"] == MemmapCategory.OSA_PRIVATE:
-                return f"PRIVATE_{port['var_osa']}_VAR_{init_infix}"
+                return f"{port['var_osa']}_PRIVATE_{init_infix}"
             elif port["buff_memmap_category"] == MemmapCategory.OSA_SHARED:
-                return f"SHARED_{port['var_osa']}_VAR_{init_infix}"
+                return f"{port['var_osa']}_SEMISHARED_{init_infix}"
             elif port["buff_memmap_category"] == MemmapCategory.CORE_SHARED:
-                return f"SHARED_CORE{port['core_id']}_VAR_{init_infix}"
+                return f"CORE{port['core_id']}_SEMISHARED_{init_infix}"
             elif port["buff_memmap_category"] == MemmapCategory.GLOBAL:
-                return f"GLOBAL_VAR_{init_infix}"
+                return f"MULTI_APP_{init_infix}"
             else:
                 return None
 
@@ -1990,12 +1985,6 @@ class Function(FunctionBase):
             and i["conn_asw_ports"]
             and list(i["queue"].values())[0]["ioc_type"] == "NONE"
         ]
-        for rport in rport_list:
-            if "timeout" in rport and rport["timeout"] > 0:
-                task_name = rport["task"][0]
-                rport["alarm_name"] = f"Rte_Al_Timeout_{task_name}"
-                rport["alarm_id"] = f'Os_Alarm_{rport["alarm_name"]}_ID'
-                rport["seconds_per_tick"] = Function.get_alarm_seconds_per_tick_by_name(context, rport["alarm_name"])
         rport_list.sort(key=lambda x: ("args" in x.keys(), x["sort_name"].lower()))
         return rport_list
 
@@ -2011,12 +2000,6 @@ class Function(FunctionBase):
             and i["conn_asw_ports"]
             and list(i["queue"].values())[0]["ioc_type"] != "NONE"
         ]
-        for rport in rport_list:
-            if "timeout" in rport and rport["timeout"] > 0:
-                task_name = rport["task"][0]
-                rport["alarm_name"] = f"Rte_Al_Timeout_{task_name}"
-                rport["alarm_id"] = f'Os_Alarm_{rport["alarm_name"]}_ID'
-                rport["seconds_per_tick"] = Function.get_alarm_seconds_per_tick_by_name(context, rport["alarm_name"])
         rport_list.sort(key=lambda x: ("args" in x.keys(), x["sort_name"].lower()))
         return rport_list
 
@@ -2623,7 +2606,7 @@ class Function(FunctionBase):
                     port_name_set.add((c_name, p_name))
         Function.__get_and_set_max_memmap_in_osa(mode_switch_pports, "mem_ack_flags")
         for pport in mode_switch_pports:
-            infix = Function.__update_cs_ms_memmap_infix(pport["memmap"], appl_name, pport["core_id"])
+            infix = Function.__update_ms_memmap_infix(pport["memmap"], appl_name, pport["core_id"])
             pport.update({"infix": infix})
         mode_switch_pports.sort(key=lambda x: x["port_name"])
         return mode_switch_pports
@@ -2684,7 +2667,7 @@ class Function(FunctionBase):
                 ret.append(pport)
         Function.__get_and_set_max_memmap_in_osa(ret, "mem_mode_dis_trig")
         for pport in ret:
-            infix = Function.__update_cs_ms_memmap_infix(pport["memmap"], osa, pport["core_id"])
+            infix = Function.__update_ms_memmap_infix(pport["memmap"], osa, pport["core_id"])
             pport.update({"infix": infix})
         ret.sort(key=lambda x: (x["swc_name"], x["port_name"], x["mode_group_prototype"]))
         return ret
@@ -2986,24 +2969,49 @@ class Function(FunctionBase):
         for var, value in memmap.items():
             if rep and var in rep and rep_osa:
                 if value == MemmapCategory.OSA_PRIVATE:
-                    rv.update({var: f"PRIVATE_{rep_osa}_VAR"})
+                    rv.update({var: f"{rep_osa}_PRIVATE"})
                 elif value == MemmapCategory.OSA_SHARED:
-                    rv.update({var: f"SHARED_{rep_osa}_VAR"})
+                    rv.update({var: f"{rep_osa}_SEMISHARED"})
                 elif value == MemmapCategory.CORE_SHARED:
-                    rv.update({var: f"SHARED_CORE{core_id}_VAR"})
+                    rv.update({var: f"MULTI_APP"})
                 elif value == MemmapCategory.GLOBAL:
-                    rv.update({var: "GLOBAL_VAR"})
+                    rv.update({var: "MULTI_APP"})
                 else:
                     rv.update({var: None})
             else:
                 if value == MemmapCategory.OSA_PRIVATE:
-                    rv.update({var: f"PRIVATE_{osa}_VAR"})
+                    rv.update({var: f"{osa}_PRIVATE"})
                 elif value == MemmapCategory.OSA_SHARED:
-                    rv.update({var: f"SHARED_{osa}_VAR"})
+                    rv.update({var: f"{osa}_SEMISHARED"})
                 elif value == MemmapCategory.CORE_SHARED:
-                    rv.update({var: f"SHARED_CORE{core_id}_VAR"})
+                    rv.update({var: f"MULTI_APP"})
                 elif value == MemmapCategory.GLOBAL:
-                    rv.update({var: "GLOBAL_VAR"})
+                    rv.update({var: "MULTI_APP"})
+                else:
+                    rv.update({var: None})
+        return rv
+
+    @staticmethod
+    @pass_context
+    def __update_ms_memmap_infix(memmap, osa, core_id, rep=[], rep_osa=None):
+        rv = {}
+        for var, value in memmap.items():
+            if rep and var in rep and rep_osa:
+                if value == MemmapCategory.OSA_PRIVATE:
+                    rv.update({var: f"{rep_osa}_PRIVATE"})
+                elif value == MemmapCategory.OSA_SHARED:
+                    rv.update({var: f"{rep_osa}_SEMISHARED"})
+                elif value in [MemmapCategory.GLOBAL, MemmapCategory.CORE_SHARED]:
+                    rv.update({var: "MULTI_APP"})
+                else:
+                    rv.update({var: None})
+            else:
+                if value == MemmapCategory.OSA_PRIVATE:
+                    rv.update({var: f"{osa}_PRIVATE"})
+                elif value == MemmapCategory.OSA_SHARED:
+                    rv.update({var: f"{osa}_SEMISHARED"})
+                elif value in [MemmapCategory.GLOBAL, MemmapCategory.CORE_SHARED]:
+                    rv.update({var: "MULTI_APP"})
                 else:
                     rv.update({var: None})
         return rv
@@ -3034,19 +3042,7 @@ class Function(FunctionBase):
             # but the alarms' timeouts must be the same (except for zero)
             rport["no_dup_tasks"] = list(set(rport["task"]))
             rport["no_dup_tasks"].sort()
-            rport["alarms"] = {}
-            for task_name in rport["no_dup_tasks"]:
-                alarm_name = f"Rte_Al_Timeout_{task_name}"
-                rport["alarms"].update(
-                    {
-                        alarm_name: {
-                            "task_name": task_name,
-                            "alarm_name": alarm_name,
-                            "alarm_id": f"Os_Alarm_{alarm_name}_ID",
-                            "seconds_per_tick": Function.get_alarm_seconds_per_tick_by_name(context, alarm_name),
-                        }
-                    }
-                )
+
         rports.sort(key=lambda x: ("args" in x.keys(), x["sort_name"].lower()))
         return rports
 
@@ -3061,11 +3057,6 @@ class Function(FunctionBase):
                 if rport["type"] not in ["Async Client"] or not rport["ioc"]:
                     continue
                 rports.append(rport)
-        for rport in rports:
-            if rport["return_mode"] == "polling" and rport["timeout"] > 0:
-                rport["alarm_name"] = f'Rte_Al_Timeout_{rport["component"]}_{rport["name"]}'
-                rport["alarm_id"] = f'Os_Alarm_{rport["alarm_name"]}_ID'
-                rport["seconds_per_tick"] = Function.get_alarm_seconds_per_tick_by_name(context, rport["alarm_name"])
         rports.sort(key=lambda x: ("args" in x.keys(), x["sort_name"].lower()))
         return rports
 
@@ -3088,14 +3079,13 @@ class Function(FunctionBase):
             if rport["timeout"] <= 0:
                 continue
             rports.append(rport)
-        for rport in rports:
-            if rport["return_mode"] == "waiting":
-                # TODO: multi access of C/S aysnc is not yet supported!
-                rport["alarm_name"] = f'Rte_Al_Timeout_{rport["task"][0]}'
-                rport["alarm_id"] = f'Os_Alarm_{rport["alarm_name"]}_ID'
-                rport["seconds_per_tick"] = Function.get_alarm_seconds_per_tick_by_name(context, rport["alarm_name"])
         rports.sort(key=lambda x: ("args" in x.keys(), x["sort_name"].lower()))
         return rports
+
+    @staticmethod
+    @pass_context
+    def get_seconds_per_tick(context, appl_name):
+        return float(context.get("os_counter", {}).get(appl_name, {}).get("OsSecondsPerTick", 0.0))
 
     @staticmethod
     @pass_context
@@ -3270,31 +3260,31 @@ class Function(FunctionBase):
                 if osa not in ret:
                     ret[osa] = {"intra_osa": [], "inter_osa_same_core": [], "inter_core": []}
                 for queue in queues["intra_osa"]:
-                    if mem_filter == "PRIVATE" and queue["infix"][var_filter] == f"PRIVATE_{osa}_VAR":
+                    if mem_filter == "PRIVATE" and queue["infix"][var_filter] == f"{osa}_PRIVATE":
                         ret[osa]["intra_osa"].append(queue)
-                    elif mem_filter == "SHARED_OSA" and queue["infix"][var_filter] == f"SHARED_{osa}_VAR":
+                    elif mem_filter == "SHARED_OSA" and queue["infix"][var_filter] == f"{osa}_SEMISHARED":
                         ret[osa]["intra_osa"].append(queue)
-                    elif mem_filter == "SHARED_CORE" and queue["infix"][var_filter] == f"SHARED_CORE{core_id}_VAR":
+                    elif mem_filter == "SHARED_CORE" and queue["infix"][var_filter] == f"MULTI_APP":
                         ret[osa]["intra_osa"].append(queue)
-                    elif mem_filter == "GLOBAL" and queue["infix"][var_filter] == "GLOBAL_VAR":
+                    elif mem_filter == "GLOBAL" and queue["infix"][var_filter] == "MULTI_APP":
                         ret[osa]["intra_osa"].append(queue)
                 for queue in queues["inter_osa_same_core"]:
-                    if mem_filter == "PRIVATE" and queue["infix"][var_filter] == f"PRIVATE_{osa}_VAR":
+                    if mem_filter == "PRIVATE" and queue["infix"][var_filter] == f"{osa}_PRIVATE":
                         ret[osa]["inter_osa_same_core"].append(queue)
-                    elif mem_filter == "SHARED_OSA" and queue["infix"][var_filter] == f"SHARED_{osa}_VAR":
+                    elif mem_filter == "SHARED_OSA" and queue["infix"][var_filter] == f"{osa}_SEMISHARED":
                         ret[osa]["inter_osa_same_core"].append(queue)
-                    elif mem_filter == "SHARED_CORE" and queue["infix"][var_filter] == f"SHARED_CORE{core_id}_VAR":
+                    elif mem_filter == "SHARED_CORE" and queue["infix"][var_filter] == f"MULTI_APP":
                         ret[osa]["inter_osa_same_core"].append(queue)
-                    elif mem_filter == "GLOBAL" and queue["infix"][var_filter] == "GLOBAL_VAR":
+                    elif mem_filter == "GLOBAL" and queue["infix"][var_filter] == "MULTI_APP":
                         ret[osa]["inter_osa_same_core"].append(queue)
                 for queue in queues["inter_core"]:
-                    if mem_filter == "PRIVATE" and queue["infix"][var_filter] == f"PRIVATE_{osa}_VAR":
+                    if mem_filter == "PRIVATE" and queue["infix"][var_filter] == f"{osa}_PRIVATE":
                         ret[osa]["inter_core"].append(queue)
-                    elif mem_filter == "SHARED_OSA" and queue["infix"][var_filter] == f"SHARED_{osa}_VAR":
+                    elif mem_filter == "SHARED_OSA" and queue["infix"][var_filter] == f"{osa}_SEMISHARED":
                         ret[osa]["inter_core"].append(queue)
-                    elif mem_filter == "SHARED_CORE" and queue["infix"][var_filter] == f"SHARED_CORE{core_id}_VAR":
+                    elif mem_filter == "SHARED_CORE" and queue["infix"][var_filter] == f"MULTI_APP":
                         ret[osa]["inter_core"].append(queue)
-                    elif mem_filter == "GLOBAL" and queue["infix"][var_filter] == "GLOBAL_VAR":
+                    elif mem_filter == "GLOBAL" and queue["infix"][var_filter] == "MULTI_APP":
                         ret[osa]["inter_core"].append(queue)
         if is_result_combined:
             combined_ret = {}
@@ -3562,13 +3552,14 @@ class Function(FunctionBase):
                     if appl_name == pport["osapplication"]:
                         mode_switch_pports.append(pport)
         for pport in mode_switch_pports:
-            infix = Function.__update_cs_ms_memmap_infix(
+            infix = Function.__update_ms_memmap_infix(
                 pport["memmap"],
                 pport["osapplication"],
                 pport["core_id"],
                 ["mem_head"],
                 pport["connected_osapplication"],
             )
+
             pport.update({"infix": infix})
         if len(mode_switch_pports) > 0:
             mode_switch_pports.sort(
@@ -3700,6 +3691,21 @@ class Function(FunctionBase):
             mode_switch_pports.sort(
                 key=lambda x: (x["swc_name"].lower(), x["port_name"].lower(), x["mode_group_prototype"].lower())
             )
+            # implementation specific
+            for pport in mode_switch_pports:
+                pport["if_use_internal_index_current_mode"] = False
+                pport["if_use_current_mode"] = False
+                if not pport["swc_mode_switch_event"]:
+                    continue
+                if pport["mode_disabled_entity"]:
+                    pport["if_use_current_mode"] = True
+                exit_events = pport["swc_mode_switch_event"].get("exit_events", [])
+                transition_events = pport["swc_mode_switch_event"].get("transition_events", [])
+                if not (exit_events or transition_events):
+                    continue
+                pport["if_use_current_mode"] = True
+                if pport["mode_group_category"] == "EXPLICIT_ORDER":
+                    pport["if_use_internal_index_current_mode"] = True
         return mode_switch_rports, mode_switch_pports
 
     # Used for Core0.c mode switch api generation
@@ -3737,7 +3743,7 @@ class Function(FunctionBase):
                 if rport["type"] == "ModeNotification" and rport["connect_port_name"]:
                     mode_switch_rports.append(rport)
         for pport in mode_switch_pports:
-            infix = Function.__update_cs_ms_memmap_infix(
+            infix = Function.__update_ms_memmap_infix(
                 pport["memmap"], pport["connected_osapplication"], pport["core_id"]
             )
             pport.update({"infix": infix})
@@ -4437,13 +4443,13 @@ class Function(FunctionBase):
         init_infix = var_info["init_category"].value
 
         if var_info["memmap_category"] == MemmapCategory.OSA_PRIVATE:
-            return f"PRIVATE_{var_info['osa']}_VAR_{init_infix}"
+            return f"{var_info['osa']}_PRIVATE_{init_infix}"
         elif var_info["memmap_category"] == MemmapCategory.OSA_SHARED:
-            return f"SHARED_{var_info['osa']}_VAR_{init_infix}"
+            return f"{var_info['osa']}_SEMISHARED_{init_infix}"
         elif var_info["memmap_category"] == MemmapCategory.CORE_SHARED:
-            return f"SHARED_CORE{var_info['core_id']}_VAR_{init_infix}"
+            return f"MULTI_APP_{init_infix}"
         elif var_info["memmap_category"] == MemmapCategory.GLOBAL:
-            return f"GLOBAL_VAR_{init_infix}"
+            return f"MULTI_APP_{init_infix}"
         else:
             return None
 
@@ -5002,11 +5008,6 @@ class Function(FunctionBase):
 
     @staticmethod
     @pass_context
-    def get_alarm_seconds_per_tick_by_name(context, alarm_name):
-        return float(context["alarm_dict"][alarm_name]["os_counter_info"]["seconds_per_tick"])
-
-    @staticmethod
-    @pass_context
     def all_complex_data_init_values_zero(context, item):
         is_all_zeros = False
         is_all_zeros = AutosarUtils.are_all_elements_zero(item)
@@ -5436,7 +5437,10 @@ class Function(FunctionBase):
         if port["imp_sr_copy_buf_opt"]:
             return port["variable"]
         else:
-            return f'Rte_{port["task"]}.Rte_RB.Rte_{port["component"]}_{port["runnable"]}.Rte_{port["port_prototype"]}_{port["data_element"]}'
+            return (
+                f'Rte_{port["task"]}.Rte_RB.Rte_{port["component"]}_{port["runnable"]}.'
+                f'Rte_{port["port_prototype"]}_{port["data_element"]}'
+            )
 
     @staticmethod
     def get_swc_sr_implicit_intra_osa_opt_ports(ports):

@@ -104,14 +104,14 @@ class MappingTableModel(QtCore.QAbstractItemModel):
 
     def setData(self, index: QtCore.QModelIndex, value: Any, role: int):
         if role == Qt.ItemDataRole.CheckStateRole:
-            if value == Qt.CheckState.Checked and not self.config.supported_multiple_selection:
+            if value == Qt.CheckState.Checked.value and not self.config.supported_multiple_selection:
                 for row, check_state in self.check_state_dict.items():
                     if check_state != Qt.CheckState.Checked:
                         continue
                     self.check_state_dict[row] = Qt.CheckState.Unchecked
                     other_index = self.index(row, 0)
                     self.dataChanged.emit(other_index, other_index, [Qt.ItemDataRole.CheckStateRole])
-            self.check_state_dict[index.row()] = value
+            self.check_state_dict[index.row()] = Qt.CheckState(value)
             return True
         else:
             return super().setData(index, value, role)

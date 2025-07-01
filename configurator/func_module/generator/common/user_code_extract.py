@@ -178,8 +178,8 @@ class UserCodeExtract:
         bsw_user_code_dict = {}
         bsw_file_list = (
             "EcuM_Callout_Stubs",
-            "Hook_Callout_Stub",
-            "IsolateUserCallout",
+            "hook_user_callout",
+            "isolate_user_callout",
             "WdgM_Status_Callout",
             "NvMUserCallout",
             "DetUserCallout",

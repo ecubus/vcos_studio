@@ -40,7 +40,7 @@ class DataMappingUI(QtWidgets.QWidget):
         self.table_view_config = MappingViewConfig()
         self.table_view_config.menu_options = {
             "Map Communication Elements": [":/add.svg", self.connect_port_solt],
-            "Remove Data Mapping": [":/not_ok.svg", self.disconnect_port_solt]
+            "Remove Data Mapping": [":/not_ok.svg", self.disconnect_port_solt],
         }
         self.table_view = MappingTableView(self.table_view_config)
         self.table_proxy_model = MappingFilterProxyModel()
@@ -50,7 +50,10 @@ class DataMappingUI(QtWidgets.QWidget):
         self.assistant_text_lable = QtWidgets.QLabel()
         assistant_link_text = "Component Connection Assistant"
         assistant_text_info = "create application connectors."
-        self.assistant_text = f'Use the <a href="#" style="text-decoration:underline;color:blue;">{assistant_link_text}</a> {assistant_text_info}'
+        self.assistant_text = (
+            f'Use the <a href="#" style="text-decoration:underline;color:blue;">{assistant_link_text}'
+            f"</a> {assistant_text_info}"
+        )
         self.button_layout_v = QtWidgets.QVBoxLayout()
         self.all_port_push_button = QtWidgets.QPushButton("All")
         self.tx_port_push_button = QtWidgets.QPushButton("Tx")
@@ -190,9 +193,10 @@ class DataMappingUI(QtWidgets.QWidget):
             return
         if name == "get_table_item_list":
             table_data_list = self.callback("data_mapping_get_main_table_data")
-            return [[MappingTableItem(data, self.main_table_model_callback_handler)
-                     for data in column_data]
-                    for column_data in table_data_list]
+            return [
+                [MappingTableItem(data, self.main_table_model_callback_handler) for data in column_data]
+                for column_data in table_data_list
+            ]
         if name == "get_table_header_list":
             return DMEditor_MainUI_Idx.get_header_list()
         if name == "get_table_item_text":
@@ -221,16 +225,20 @@ class DataMappingUI(QtWidgets.QWidget):
                         self.callback_param_dict["filter"] = {}
                     else:
                         self.callback_param_dict["filter"]["case_sensitive"] = self.callback_param_dict["filter"][
-                            "match_case"]
+                            "match_case"
+                        ]
                         self.callback_param_dict["filter"]["whole_word"] = self.callback_param_dict["filter"][
-                            "match_whole_word"]
-                    config.input_data = self.callback("data_mapping_assistant_map_ui_data_after_selecting_port",
-                                                      self.callback_param_dict)
+                            "match_whole_word"
+                        ]
+                    config.input_data = self.callback(
+                        "data_mapping_assistant_map_ui_data_after_selecting_port", self.callback_param_dict
+                    )
                     return config.input_data
             if config.mapping_ui_type == MappingAssistantUIType.SELECT_SYSTEM_SIGNAL:
                 self.callback_param_dict["row_items"] = config.input_data
-                config.table_data = config.table_data or self.callback("data_mapping_rte_right_click_connect",
-                                                                       self.callback_param_dict)
+                config.table_data = config.table_data or self.callback(
+                    "data_mapping_rte_right_click_connect", self.callback_param_dict
+                )
                 return config.table_data
             if config.mapping_ui_type == MappingAssistantUIType.SELECT_REFERENCE_TARGET:
                 self.callback_param_dict["row_items"] = config.input_data
@@ -240,9 +248,11 @@ class DataMappingUI(QtWidgets.QWidget):
                 return self.callback("data_mapping_assistant_signal_ui_data", self.callback_param_dict)
 
         elif name == "get_table_item_text":
-            if config.mapping_ui_type & (MappingAssistantUIType.SELECT_SYSTEM_SIGNAL |
-                                         MappingAssistantUIType.SELECT_REFERENCE_TARGET |
-                                         MappingAssistantUIType.ASSISTANT_SELECT_REFERENCE_TARGET):
+            if config.mapping_ui_type & (
+                MappingAssistantUIType.SELECT_SYSTEM_SIGNAL
+                | MappingAssistantUIType.SELECT_REFERENCE_TARGET
+                | MappingAssistantUIType.ASSISTANT_SELECT_REFERENCE_TARGET
+            ):
                 return kwargs["data"]["data"]
             if config.mapping_ui_type == MappingAssistantUIType.DATA_MAPPING_ASSISTANT:
                 if config.current_page_title == "Select Port Prototypes":
@@ -260,8 +270,9 @@ class DataMappingUI(QtWidgets.QWidget):
                 self.callback_param_dict["row_items"] = {
                     i: [vv for vv in v.values()] for i, v in enumerate(kwargs["data"])
                 }
-                config.table_data = self.callback("data_mapping_editor_map_ui_data_from_editor_signal_ui",
-                                                  self.callback_param_dict)
+                config.table_data = self.callback(
+                    "data_mapping_editor_map_ui_data_from_editor_signal_ui", self.callback_param_dict
+                )
                 self.mapping_assistant_ui.table_model.reset_model()
                 return
             if config.mapping_ui_type == MappingAssistantUIType.DATA_MAPPING_ASSISTANT:
@@ -274,7 +285,8 @@ class DataMappingUI(QtWidgets.QWidget):
                     i: [vv for vv in v.values()] for i, v in enumerate(kwargs["data"])
                 }
                 self.mapping_assistant_ui.input_data = self.callback(
-                    "data_mapping_assistant_map_ui_data_after_selecting_signal", self.callback_param_dict)
+                    "data_mapping_assistant_map_ui_data_after_selecting_signal", self.callback_param_dict
+                )
                 self.mapping_assistant_ui.table_model.reset_model()
                 return
 

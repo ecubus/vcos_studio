@@ -126,6 +126,7 @@ def __update_cfg_dict(
         cfg_dict["rte"]["implementation_datatypes"] = {}
         cfg_dict["rte"]["mode_declaration_group"] = {}
 
+    cfg_dict["rte"]["os_counter"] = AutosarUtils.get_os_counter()
     cfg_dict["rte"]["appl_dict"] = cfg_dict["rte"]["os_cfg"]["OsApplications"]
     cfg_dict["rte"]["alarm_dict"] = cfg_dict["rte"]["os_cfg"]["os_alarms"]
     cfg_dict["rte"]["asw_config"] = code_gen_dict

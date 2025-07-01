@@ -2082,7 +2082,7 @@ class AutosarUtil:
 
     @classmethod
     def save_assembly_sw_connector(cls, flatExtract_autosar, sw_connectors: List):
-        connectors = flatExtract_autosar.find("/COM/VECTOR/CFG/WORKFLOW/SYSDESC/SYNC/COMPOSITIONTYPE").CONNECTORS
+        connectors = flatExtract_autosar.find("/COM/VCOS2/CFG/WORKFLOW/SYSDESC/SYNC/COMPOSITIONTYPE").CONNECTORS
         connector_set = set(
             map(lambda x: x.SHORT_NAME.valueOf_, connectors.ASSEMBLY_SW_CONNECTOR + connectors.DELEGATION_SW_CONNECTOR)
         )

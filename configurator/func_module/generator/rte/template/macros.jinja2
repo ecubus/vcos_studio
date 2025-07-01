@@ -110,18 +110,18 @@
 
 {%- macro CAL_PARAM_CONST(ind, const_name, port_arg, is_extern) %}
     {%- if is_extern %}
-{{ind}}extern CONST({{port_arg['datatype']['name']}}, RTE_XCP_CALIB_CONST) {{const_name}};
+{{ind}}extern CONST({{port_arg['datatype']['name']}}, RTE_CALIB_CONST) {{const_name}};
     {%- else %}
         {%- set init_value, is_zero, is_bool = get_sr_var_init_value(port_arg['datatype'], port_arg["init_value"]) %}
-{{ind}}CONST({{port_arg['datatype']['name']}}, RTE_XCP_CALIB_CONST) {{const_name}} = {{init_value}};
+{{ind}}CONST({{port_arg['datatype']['name']}}, RTE_CALIB_CONST) {{const_name}} = {{init_value}};
     {%- endif %}
 {%- endmacro %}
 
 {%- macro CAL_PARAM_CONSTS_MEMMAP(is_start) %}
     {%- if is_start %}
-#define RTE_START_SEC_CALIB_CONST_UNSPECIFIED
+#define RTE_START_SEC_CALIB_CONST
     {%- else %}
-#define RTE_STOP_SEC_CALIB_CONST_UNSPECIFIED
+#define RTE_STOP_SEC_CALIB_CONST
     {%- endif %}
 #include "rte_memmap.h"
 {%- endmacro %}

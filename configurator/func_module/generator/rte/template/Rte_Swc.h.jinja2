@@ -28,12 +28,10 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-#ifdef VAR
-#undef VAR
-#endif
-#define VAR(vartype, memclass) vartype
+
 #include "Rte_Type.h"
 #include "Rte_{{swc_name}}_Type.h"
+
 {%- if rte_swc_header_need_include_os_header() %}
 #include "Os.h"
 {%- endif %}
@@ -104,24 +102,24 @@ extern VAR({{datatype['name']}}, {{appl_prefix}}{{appl_name_or_core_id}}_{{appl_
  */
     {%- set ns = namespace(counter1=0, counter2=0) %}
     {%- for memmap_infix, appl_variables in variables.items() %}
-#define RTE_START_SEC_{{memmap_infix.upper()}}_UNSPECIFIED
+#define RTE_START_SEC_{{memmap_infix.upper()}}
 #include "rte_memmap.h"
         {%- for buffer in appl_variables.values() %}
-            {%- if (buffer.get("buff_struct_type", None)) and (buffer.get("buff_struct_name", None)) and buffer['is_zero_init'] and memmap_infix == 'PRIVATE_' ~ appl_name ~ '_VAR_ZERO_INIT' %}
+            {%- if (buffer.get("buff_struct_type", None)) and (buffer.get("buff_struct_name", None)) and buffer['is_zero_init'] and memmap_infix == 'PRIVATE_' ~ appl_name ~ '_DATA' %}
             {%- set ns.counter1 = ns.counter1 + 1 %}
                 {%- if ns.counter1 == 1 %}
-extern VAR({{buffer["buff_struct_type"]}}, RTE_PRIVATE_{{appl_name.upper()}}_VAR_ZERO_INIT) {{buffer["buff_struct_name"]}};
+extern VAR({{buffer["buff_struct_type"]}}, RTE_{{appl_name.upper()}}_PRIVATE_DATA) {{buffer["buff_struct_name"]}};
                 {%- endif %}
-            {%- elif (buffer.get("buff_struct_type", None)) and (buffer.get("buff_struct_name", None)) and not buffer['is_zero_init'] and memmap_infix == 'PRIVATE_' ~ appl_name ~ '_VAR_INIT' %}
+            {%- elif (buffer.get("buff_struct_type", None)) and (buffer.get("buff_struct_name", None)) and not buffer['is_zero_init'] and memmap_infix == 'PRIVATE_' ~ appl_name ~ '_DATA' %}
             {%- set ns.counter2 = ns.counter2 + 1 %}
                 {%- if ns.counter2 == 1 %}
-extern VAR({{buffer["buff_struct_type"]}}, RTE_PRIVATE_{{appl_name.upper()}}_VAR_INIT) {{buffer["buff_struct_name"]}};
+extern VAR({{buffer["buff_struct_type"]}}, RTE_{{appl_name.upper()}}_PRIVATE_DATA) {{buffer["buff_struct_name"]}};
                 {%- endif %}
             {%- else %}
 extern VAR({{buffer["datatype"]}}, RTE_{{memmap_infix.upper()}}) {{buffer["variable"]}};
             {%- endif %}
         {%- endfor %}
-#define RTE_STOP_SEC_{{memmap_infix.upper()}}_UNSPECIFIED
+#define RTE_STOP_SEC_{{memmap_infix.upper()}}
 #include "rte_memmap.h"
     {%- endfor %}
 #endif /* !defined(RTE_CORE) */
@@ -134,12 +132,12 @@ extern VAR({{buffer["datatype"]}}, RTE_{{memmap_infix.upper()}}) {{buffer["varia
 /*
  * extern declaration of Update flags for S/R Receiver with enableUpdate == True
  */
-#define RTE_START_SEC_PRIVATE_{{appl_name.upper()}}_VAR_ZERO_INIT_UNSPECIFIED
+#define RTE_START_SEC_{{appl_name.upper()}}_PRIVATE_DATA
 #include "rte_memmap.h"
     {%- for rport in isupdated_rports %}
-extern VAR(uint8, RTE_PRIVATE_{{appl_name.upper()}}_VAR_ZERO_INIT) Rte_RxUpdate_{{rport['component']}}_{{rport['name']}};
+extern VAR(uint8, RTE_{{appl_name.upper()}}_PRIVATE_DATA) Rte_RxUpdate_{{rport['component']}}_{{rport['name']}};
     {%- endfor %}
-#define RTE_STOP_SEC_PRIVATE_{{appl_name.upper()}}_VAR_ZERO_INIT_UNSPECIFIED
+#define RTE_STOP_SEC_{{appl_name.upper()}}_PRIVATE_DATA
 #include "rte_memmap.h"
 #endif /* !defined(RTE_CORE) */
 {%- endif %}
@@ -155,7 +153,7 @@ extern VAR(uint8, RTE_PRIVATE_{{appl_name.upper()}}_VAR_ZERO_INIT) Rte_RxUpdate_
 {%- endif %}
 {%- for pport in unpports %}
 #define Rte_Write_{{pport['name']}} Rte_Write_{{swc_name}}_{{pport['name']}}
-#define Rte_Write_{{swc_name}}_{{pport['name']}}(data) (RTE_E_OK)
+#define Rte_Write_{{swc_name}}_{{pport['name']}}(data) (((void) data), ((Std_ReturnType)RTE_E_OK))
 {%- endfor %}
 {%- for pport in pports %}
 #define Rte_Write_{{pport["name"]}} Rte_Write_{{swc_name}}_{{pport["name"]}}
@@ -206,7 +204,7 @@ extern VAR(uint8, RTE_PRIVATE_{{appl_name.upper()}}_VAR_ZERO_INIT) Rte_RxUpdate_
 #define Rte_Read_{{rport["name"]}} Rte_Read_{{swc_name}}_{{rport["name"]}}
 #define Rte_Read_{{swc_name}}_{{rport["name"]}}(data) \
     {%- if rport.get("dm_macro_api", false) %}
-    (Com_ReceiveSignal(ComConf_ComSignal_{{rport["mapping_to_signals"][0]}}_Rx, (data)))
+    (com_receive_signal(ComConf_ComSignal_{{rport["mapping_to_signals"][0]}}_Rx, (data)))
     {%- else %}
         {%- if rport['arg']['datatype']["native_category"] == "NUMERICAL" %}
             {%- if rport.get('buff_struct_name', None) %}
@@ -234,11 +232,11 @@ extern VAR(uint8, RTE_PRIVATE_{{appl_name.upper()}}_VAR_ZERO_INIT) Rte_RxUpdate_
 # ifndef RTE_CORE
     {%- for pport in queue_unpports %}
 #define Rte_Send_{{pport['port_prototype']}}_{{pport['data_element']}} Rte_Send_{{swc_name}}_{{pport['port_prototype']}}_{{pport['data_element']}}
-#define Rte_Send_{{swc_name}}_{{pport['port_prototype']}}_{{pport['data_element']}}(data) (RTE_E_OK)
+#define Rte_Send_{{swc_name}}_{{pport['port_prototype']}}_{{pport['data_element']}}(data) (((void) data), ((Std_ReturnType) RTE_E_OK))
     {%- endfor %}
     {%- for rport in queue_unrports %}
 #define Rte_Receive_{{rport['port_prototype']}}_{{rport['data_element']}} Rte_Receive_{{swc_name}}_{{rport['port_prototype']}}_{{rport['data_element']}}
-#define Rte_Receive_{{swc_name}}_{{rport['port_prototype']}}_{{rport['data_element']}}(data) (RTE_E_UNCONNECTED)
+#define Rte_Receive_{{swc_name}}_{{rport['port_prototype']}}_{{rport['data_element']}}(data) (((void) data), ((Std_ReturnType) RTE_E_UNCONNECTED))
     {%- endfor %}
 # endif /* !defined(RTE_CORE) */
 {%- endif %} {# {%- if queue_unpports or queue_unrports %} #}
@@ -251,12 +249,12 @@ extern VAR(uint8, RTE_PRIVATE_{{appl_name.upper()}}_VAR_ZERO_INIT) Rte_RxUpdate_
 /*
  * Rte Copy Buffers for implicit S/R
 */
-#define RTE_START_SEC_PRIVATE_{{appl_name.upper()}}_VAR_ZERO_INIT_UNSPECIFIED
+#define RTE_START_SEC_{{appl_name.upper()}}_PRIVATE_DATA
 #include "rte_memmap.h"
     {%- for task in buffers %}
-extern VAR(Rte_ts_{{task}}, RTE_PRIVATE_{{appl_name.upper()}}_VAR_ZERO_INIT) Rte_{{task}};
+extern VAR(Rte_ts_{{task}}, RTE_{{appl_name.upper()}}_PRIVATE_DATA) Rte_{{task}};
     {%- endfor %}
-#define RTE_STOP_SEC_PRIVATE_{{appl_name.upper()}}_VAR_ZERO_INIT_UNSPECIFIED
+#define RTE_STOP_SEC_{{appl_name.upper()}}_PRIVATE_DATA
 #include "rte_memmap.h"
 # endif /* !defined(RTE_CORE) */
 {%- endif %}
@@ -271,7 +269,7 @@ extern VAR(Rte_ts_{{task}}, RTE_PRIVATE_{{appl_name.upper()}}_VAR_ZERO_INIT) Rte
  * Buffer extern for intra-osa implicit S/R Non-Queue
 */
 {# non-zero init value#}
-#define RTE_START_SEC_PRIVATE_{{appl_name.upper()}}_VAR_INIT_UNSPECIFIED
+#define RTE_START_SEC_{{appl_name.upper()}}_PRIVATE_DATA
 #include "rte_memmap.h"
 {%- set ns = namespace(counter=0) %}
 {%- for buffer in intra_osa_imp_sr_opt_ports %}
@@ -279,16 +277,16 @@ extern VAR(Rte_ts_{{task}}, RTE_PRIVATE_{{appl_name.upper()}}_VAR_ZERO_INIT) Rte
     {%- set zero_init = buffer['arg']['init_value']['is_zero_init'] %}
     {%- if buffer.get('buff_struct_type', None) and buffer.get('buff_struct_name', None) and not zero_init %}
         {%- if ns.counter == 1 %}
-extern VAR({{buffer['buff_struct_type']}}, RTE_PRIVATE_{{appl_name.upper()}}_VAR_ZERO_INIT) {{buffer['buff_struct_name']}};
+extern VAR({{buffer['buff_struct_type']}}, RTE_{{appl_name.upper()}}_PRIVATE_DATA) {{buffer['buff_struct_name']}};
         {%- endif %}
     {%- else %}
-    {{-sr_init_value_non_zero("RTE_PRIVATE_", appl_name.upper(), "VAR_INIT", buffer)}}
+    {{-sr_init_value_non_zero("RTE_", appl_name.upper(), "PRIVATE_DATA", buffer)}}
     {%- endif %}
 {%- endfor %}
-#define RTE_STOP_SEC_PRIVATE_{{appl_name.upper()}}_VAR_INIT_UNSPECIFIED
+#define RTE_STOP_SEC_{{appl_name.upper()}}_PRIVATE_DATA
 #include "rte_memmap.h"
 {# zero init value #}
-#define RTE_START_SEC_PRIVATE_{{appl_name.upper()}}_VAR_ZERO_INIT_UNSPECIFIED
+#define RTE_START_SEC_{{appl_name.upper()}}_PRIVATE_DATA
 #include "rte_memmap.h"
 {%- set ns = namespace(counter=0) %}
 {%- for buffer in intra_osa_imp_sr_opt_ports %}
@@ -296,13 +294,13 @@ extern VAR({{buffer['buff_struct_type']}}, RTE_PRIVATE_{{appl_name.upper()}}_VAR
     {%- set zero_init = buffer['arg']['init_value']['is_zero_init'] %}
     {%- if buffer.get('buff_struct_type', None) and buffer.get('buff_struct_name', None) and zero_init %}
         {%- if ns.counter == 1 %}
-extern VAR({{buffer['buff_struct_type']}}, RTE_PRIVATE_{{appl_name.upper()}}_VAR_INIT) {{buffer['buff_struct_name']}};
+extern VAR({{buffer['buff_struct_type']}}, RTE_{{appl_name.upper()}}_PRIVATE_DATA) {{buffer['buff_struct_name']}};
         {%- endif %}
     {%- else %}
-    {{-sr_init_value_zero("RTE_PRIVATE_", appl_name.upper(), "VAR_ZERO_INIT", buffer)}}
+    {{-sr_init_value_zero("RTE_", appl_name.upper(), "PRIVATE_DATA", buffer)}}
     {%- endif %}
 {%- endfor %}
-#define RTE_STOP_SEC_PRIVATE_{{appl_name.upper()}}_VAR_ZERO_INIT_UNSPECIFIED
+#define RTE_STOP_SEC_{{appl_name.upper()}}_PRIVATE_DATA
 #include "rte_memmap.h"
 # endif /* !defined(RTE_CORE) */
 {%- endif %}
@@ -443,6 +441,8 @@ extern Std_ReturnType Rte_Send_{{pport['component']}}_{{pport['port_prototype']}
 extern Std_ReturnType Rte_Receive_{{rport['component']}}_{{rport['port_prototype']}}_{{rport['data_element']}}({{data_arg}});
 {%- endfor %}
 {#- Internal_Trigger API prototypes #}
+#define RTE_START_SEC_CODE
+#include "rte_memmap.h"
 {%- for swc_runnable_trigger, trigger_apis in int_trigger_apis.items() %}
 {%- set swc, runnable, trigger = swc_runnable_trigger.split('/') %}
 FUNC(void, RTE_CODE) Rte_IrTrigger_{{swc}}_{{runnable}}_{{trigger}}(void);
@@ -451,6 +451,8 @@ FUNC(void, RTE_CODE) Rte_IrTrigger_{{swc}}_{{runnable}}_{{trigger}}(void);
 {%- for trigger_api in ext_trigger_apis %}
 FUNC(void, RTE_CODE) Rte_Trigger_{{trigger_api["sort_name"]}}(void);
 {%- endfor %}
+#define RTE_STOP_SEC_CODE
+#include "rte_memmap.h"
 {%- if explicit_pports or explicit_rports or isupdated_rports or queue_pports or queue_rports or int_trigger_apis or ext_trigger_apis %}
 # endif /* !defined(RTE_CORE) */
 {%- endif %}
@@ -562,7 +564,7 @@ extern Std_ReturnType Rte_Call_{{swc_name}}_{{client_server_rport["name"]}}({{"v
 {%- set arg_str = "void" if operation_args | length == 0 else operation_args | join(", ") %}
 {%- if port_def_args and connected_port["symbol"] %}
     {%- if operation["return_type"] == "void" %}
-LOCAL_INLINE Std_ReturnType Rte_Call_{{client_server_rport["name"]}}({{arg_str}}) {
+static inline Std_ReturnType Rte_Call_{{client_server_rport["name"]}}({{arg_str}}) {
     (void){{connected_port["symbol"]}}({{(get_port_def_arg_str_list(port_def_args.values()) + get_arg_name_list(operation["args"].values())) | join(", ")}});
     return RTE_E_OK;
 }
@@ -571,7 +573,7 @@ LOCAL_INLINE Std_ReturnType Rte_Call_{{client_server_rport["name"]}}({{arg_str}}
     {%- endif %}
 {%- elif connected_port["symbol"] %}
     {%- if operation["return_type"] == "void" %}
-LOCAL_INLINE Std_ReturnType Rte_Call_{{client_server_rport["name"]}}({{arg_str}}) {
+static inline Std_ReturnType Rte_Call_{{client_server_rport["name"]}}({{arg_str}}) {
     (void){{connected_port["symbol"]}}({{get_arg_name_list(operation["args"].values()) | join(", ")}});
     return RTE_E_OK;
 }
@@ -626,21 +628,21 @@ extern Std_ReturnType Rte_Result_{{rport["component"]}}_{{rport["name"]}}({{"voi
 
 {# buffer declaration #}
 {%- if vars %}
-#define RTE_START_SEC_PRIVATE_{{appl_name.upper()}}_VAR_INIT_UNSPECIFIED
+#define RTE_START_SEC_{{appl_name.upper()}}_PRIVATE_DATA
 #include "rte_memmap.h"
     {%- for pim in vars %}
-extern VAR({{pim["buff_type"]}}, RTE_PRIVATE_{{appl_name.upper()}}_VAR_INIT) {{pim["buff"]}};
+extern VAR({{pim["buff_type"]}}, RTE_{{appl_name.upper()}}_PRIVATE_DATA) {{pim["buff"]}};
     {%- endfor %}
-#define RTE_STOP_SEC_PRIVATE_{{appl_name.upper()}}_VAR_INIT_UNSPECIFIED
+#define RTE_STOP_SEC_{{appl_name.upper()}}_PRIVATE_DATA
 #include "rte_memmap.h"
 {%- endif %}
 {%- if vars_no_init_value %}
-#define RTE_START_SEC_PRIVATE_{{appl_name.upper()}}_VAR_NO_INIT_UNSPECIFIED
+#define RTE_START_SEC_{{appl_name.upper()}}_PRIVATE_BSS
 #include "rte_memmap.h"
     {%- for pim in vars_no_init_value %}
-extern VAR({{pim["buff_type"]}}, RTE_PRIVATE_{{appl_name.upper()}}_VAR_NO_INIT) {{pim["buff"]}};
+extern VAR({{pim["buff_type"]}}, RTE_{{appl_name.upper()}}_PRIVATE_BSS) {{pim["buff"]}};
     {%- endfor %}
-#define RTE_STOP_SEC_PRIVATE_{{appl_name.upper()}}_VAR_NO_INIT_UNSPECIFIED
+#define RTE_STOP_SEC_{{appl_name.upper()}}_PRIVATE_BSS
 #include "rte_memmap.h"
 {%- endif %}
 
@@ -681,25 +683,25 @@ extern VAR({{pim["buff_type"]}}, RTE_PRIVATE_{{appl_name.upper()}}_VAR_NO_INIT) 
 
 {#- var def #}
 {%- if irv_var_exp %}
-#define RTE_START_SEC_PRIVATE_{{appl_name.upper()}}_VAR_INIT_UNSPECIFIED
+#define RTE_START_SEC_{{appl_name.upper()}}_PRIVATE_DATA
 #include "rte_memmap.h"
     {%- for irv in irv_var_exp %}
-extern VAR({{irv["datatype"]["name"]}}, RTE_PRIVATE_{{appl_name.upper()}}_VAR_INIT) {{irv["buff"]}};
+extern VAR({{irv["datatype"]["name"]}}, RTE_{{appl_name.upper()}}_PRIVATE_DATA) {{irv["buff"]}};
     {%- endfor %}
-#define RTE_STOP_SEC_PRIVATE_{{appl_name.upper()}}_VAR_INIT_UNSPECIFIED
+#define RTE_STOP_SEC_{{appl_name.upper()}}_PRIVATE_DATA
 #include "rte_memmap.h"
 {%- endif %}
 
 {%- if irv_var_exp_no_init_value or irv_var_imp_copy %}
-#define RTE_START_SEC_PRIVATE_{{appl_name.upper()}}_VAR_NO_INIT_UNSPECIFIED
+#define RTE_START_SEC_{{appl_name.upper()}}_PRIVATE_BSS
 #include "rte_memmap.h"
     {%- for irv in irv_var_exp_no_init_value %}
-extern VAR({{irv["datatype"]["name"]}}, RTE_PRIVATE_{{appl_name.upper()}}_VAR_NO_INIT) {{irv["buff"]}};
+extern VAR({{irv["datatype"]["name"]}}, RTE_{{appl_name.upper()}}_PRIVATE_BSS) {{irv["buff"]}};
     {%- endfor %}
     {%- for access in irv_var_imp_copy %}
-extern VAR({{access["data"]["datatype"]["name"]}}, RTE_PRIVATE_{{appl_name.upper()}}_VAR_NO_INIT) {{access["buff_imp_copy"]}};
+extern VAR({{access["data"]["datatype"]["name"]}}, RTE_{{appl_name.upper()}}_PRIVATE_BSS) {{access["buff_imp_copy"]}};
     {%- endfor %}
-#define RTE_STOP_SEC_PRIVATE_{{appl_name.upper()}}_VAR_NO_INIT_UNSPECIFIED
+#define RTE_STOP_SEC_{{appl_name.upper()}}_PRIVATE_BSS
 #include "rte_memmap.h"
 {%- endif %}
 
@@ -898,10 +900,7 @@ extern {{runnable["return_type"]}} {{runnable["name"]}}(void);
 {%- if used_port_interface_list_for_swc %}
 # endif /* !defined(RTE_CORE) */
 {%- endif %}
-#ifdef VAR
-#undef VAR
-#endif
-#define VAR(vartype, memclass) vartype memclass
+
 #ifdef __cplusplus
 }
 #endif

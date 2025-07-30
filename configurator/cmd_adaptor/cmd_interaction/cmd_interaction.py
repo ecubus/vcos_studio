@@ -162,13 +162,13 @@ class CmdInteraction:
         return result
 
     def execute_generate_command(
-        self, project_path, module_list, is_debug: bool = False, forced_codegen: bool = True
+        self, project_path, module_list, is_debug: bool = False, forced_codegen: bool = True, sim_mode: bool = False
     ) -> bool:
         result = False
 
         if project_path:
             module_list = self.handle_cmd_input_modules(module_list)
-            result = GenerateCmdFunc.execute_auto_generate_c_code(project_path, module_list, is_debug, forced_codegen)
+            result = GenerateCmdFunc.execute_auto_generate_c_code(project_path, module_list, is_debug, forced_codegen, sim_mode)
 
         if not result:
             logger.debug(f"generate c code failed {result}")

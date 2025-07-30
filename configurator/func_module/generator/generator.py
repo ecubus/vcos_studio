@@ -24,6 +24,7 @@ from func_module.health_monitor.logger import logger
 from func_module.generator.bsw import generator as bsw_generator
 from func_module.generator.rte import generator as rte_generator
 from func_module.generator.appl import generator as appl_generator
+from func_module.generator.sim import generator as sim_generator
 from func_module.generator.cmake import generator as cmake_generator
 from func_module.generator.common.user_code_extract import UserCodeExtract
 from func_module.module_management.arxml_handler.arxml_parse_save import ArxmlParseHandler
@@ -150,6 +151,10 @@ def generate_c_code(
         sys_info_dict, cfg_info_dict, ecuc_autosar_dict, module_cfg, mcal_module_codegen_cmd_line_dict, progress_signal
     )
 
+    sim_result_dict = generate_sim_c_code(
+        sys_info_dict, cfg_info_dict, ecuc_autosar_dict, module_cfg, progress_signal
+    )
+
     cmake_result_dict = cmake_generator.generate_project_cmake(sys_info_dict)
 
     codegen_result = report_codegen_result(
@@ -177,6 +182,7 @@ def get_sys_info_dict(sys_info_class, codegen_autosar_dict=None):
         "project_path": sys_info_class.project_path,
         "mode": sys_info_class.mode,
         "incremental_generation": sys_info_class.incremental_generation,
+        "sim_mode": sys_info_class.sim_mode,
         "modules_info": {
             "all_module_list": sorted(list(sys_info_class.all_modules)),
             "enabled_module_list": sorted(list(sys_info_class.enable_modules)),
@@ -314,6 +320,13 @@ def generate_bsw_c_code(
     )
     return bsw_result_dict
 
+def generate_sim_c_code(
+    sys_info_dict, cfg_info_dict, ecuc_autosar_dict, module_cfg, progress_signal
+):
+    sim_result_dict = sim_generator.generate(
+        sys_info_dict, cfg_info_dict, ecuc_autosar_dict, module_cfg, progress_signal
+    )
+    return sim_result_dict
 
 def generate_rte_c_code(sys_info_dict, cfg_info_dict, user_code, parser_ret, ecuc_autosar_dict=None):
     rte_result_dict = rte_generator.generate(sys_info_dict, cfg_info_dict, user_code, parser_ret, ecuc_autosar_dict)

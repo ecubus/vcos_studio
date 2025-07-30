@@ -46,6 +46,15 @@ class BSWGeneratorWidget(GenerateAndValidationBaseUI):
         self.Hitem0.addStretch(2)
         self.Hitem0.addWidget(self.Incremental_generation_checkbox)
 
+        self.simulator_checkbox_label = QLabel("Simulator Mode")
+        self.simulator_checkbox = QCheckBox(self)
+        self.simulator_checkbox.setChecked(False)
+        self.simulator_checkbox.setGeometry(0, 0, 151, 25)
+        self.Hitem_Sim = QHBoxLayout()
+        self.Hitem_Sim.addWidget(self.simulator_checkbox_label)
+        self.Hitem_Sim.addStretch(2)
+        self.Hitem_Sim.addWidget(self.simulator_checkbox)
+
         self.mode_label = QLabel("Select Limit: ")
         self.checkbox = QComboBox(self)
         self.checkbox.setGeometry(0, 0, 151, 25)
@@ -66,6 +75,7 @@ class BSWGeneratorWidget(GenerateAndValidationBaseUI):
         self.Hitem2.addWidget(self.mode_checkbox)
 
         self.Vitem.addLayout(self.Hitem0)
+        self.Vitem.addLayout(self.Hitem_Sim)
         self.Vitem.addLayout(self.Hitem1)
         self.Vitem.addLayout(self.Hitem2)
 
@@ -82,6 +92,7 @@ class BSWGeneratorWidget(GenerateAndValidationBaseUI):
                 "mode_info": self.mode_checkbox.currentText(),
                 "incremental_generation_info": self.Incremental_generation_checkbox.isChecked(),
                 "generation_limit": self.checkbox.currentText(),
+                "sim_mode": self.simulator_checkbox.isChecked(),
             },
         )
         self.close()

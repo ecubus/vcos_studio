@@ -39,7 +39,7 @@ class GenerateCmdFunc:
         pass
 
     @classmethod
-    def execute_auto_generate_c_code(cls, project_path, module_list, is_debug=False, forced_codegen=False) -> bool:
+    def execute_auto_generate_c_code(cls, project_path, module_list, is_debug=False, forced_codegen=False, sim_mode=False) -> bool:
         GenerateCmdFunc.vcos_studio_init_finish()
         logger.info("Loading project file...")
         logger.info(project_path)
@@ -64,7 +64,7 @@ class GenerateCmdFunc:
                 logger.error(f"Validation ERROR: Incorrect validation of {module_name} stopped code generation.")
                 return False
 
-        result = cls.execute_auto_generate(module_list, is_debug=is_debug, forced_codegen=forced_codegen)
+        result = cls.execute_auto_generate(module_list, is_debug=is_debug, forced_codegen=forced_codegen, sim_mode=sim_mode)
         if result is False:
             return False
 
@@ -78,7 +78,7 @@ class GenerateCmdFunc:
         return True
 
     @classmethod
-    def execute_auto_generate(cls, module_list, is_debug=False, forced_codegen=False) -> bool:
+    def execute_auto_generate(cls, module_list, is_debug=False, forced_codegen=False, sim_mode=False) -> bool:
         codegen_autosar_dict = vcos_generator.init_codegen_autosar_dict(data_management)
         enable_module_dict = {
             name: getattr(getattr(v, "DEFINITION_REF", ""), "valueOf_", "").split("/")[-1]
@@ -117,11 +117,11 @@ class GenerateCmdFunc:
         data_management.sys_info_class.codegen_module_dict = codegen_module_list
         data_management.sys_info_class.codegen_modules = codegen_modules
 
-        result = cls.generate_c_code(data_management.sys_info_class, codegen_autosar_dict, is_debug, forced_codegen)
+        result = cls.generate_c_code(data_management.sys_info_class, codegen_autosar_dict, is_debug, forced_codegen, sim_mode)
         return result
 
     @classmethod
-    def generate_c_code(cls, sys_info_class, codegen_autosar_dict, is_debug=False, forced_codegen=False) -> bool:
+    def generate_c_code(cls, sys_info_class, codegen_autosar_dict, is_debug=False, forced_codegen=False, sim_mode=False) -> bool:
         if is_debug:
             data_management.sys_info_class.mode = "debug"
         else:
@@ -130,6 +130,7 @@ class GenerateCmdFunc:
             data_management.sys_info_class.incremental_generation = False
         else:
             data_management.sys_info_class.incremental_generation = True
+        data_management.sys_info_class.sim_mode = sim_mode
         result = vcos_generator.generate_c_code(sys_info_class, codegen_autosar_dict, progress_signal)
         return result
 

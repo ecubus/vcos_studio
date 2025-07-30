@@ -107,6 +107,7 @@ class FuncLogicLayer:
         data_management.sys_info_class.mode = info_dict["mode_info"]
         data_management.sys_info_class.incremental_generation = info_dict["incremental_generation_info"]
         data_management.sys_info_class.generation_limit = info_dict.get("generation_limit", "Error")
+        data_management.sys_info_class.sim_mode = info_dict.get("sim_mode", False)
 
     def get_module_type(self):
         module_cfg = getattr(data_management, "sys_target_dict", {}).get("module_cfg", {})
@@ -551,7 +552,7 @@ class FuncLogicLayer:
         progress_signal.emit("Merge service arxml to system arxml")
         try:
             res, component_arxml_path_dict_info = ArxmlParseHandler.asw_arxml_merge(
-                os.path.join(config_base_path, "Asw"), config_base_path
+                os.path.join(config_base_path, "asw"), config_base_path
             )
         except:
             raise

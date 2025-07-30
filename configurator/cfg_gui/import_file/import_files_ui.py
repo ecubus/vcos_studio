@@ -209,7 +209,7 @@ class ImportFilesUI(QDialog, Ui_Form):
         file_dialog: QFileDialog = QFileDialog()
         file_dialog.setFileMode(QFileDialog.FileMode.ExistingFile)
         files_list, _ = file_dialog.getOpenFileNames(
-            self, "VCOS Studio Import Files", "", filter=("*.dbc *.xlsx")
+            self, "VCOS Studio Import Files", "", filter=("*.dbc *.xlsx *.cdd")
         )  # 该方法不支持选择不同类型的文件
         if len(files_list) == 0:
             return

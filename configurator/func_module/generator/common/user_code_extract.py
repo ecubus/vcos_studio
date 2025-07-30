@@ -177,14 +177,14 @@ class UserCodeExtract:
     def bsw_callout_user_code(cls, folder_path):
         bsw_user_code_dict = {}
         bsw_file_list = (
-            "EcuM_Callout_Stubs",
+            "sysm_init_user_callout",
             "hook_user_callout",
             "isolate_user_callout",
-            "WdgM_Status_Callout",
-            "NvMUserCallout",
-            "DetUserCallout",
-            "CsmUserCallout",
-            "EthIf_Eth_Callout",
+            "wdgm_status_callout",
+            "nvm_user_callout",
+            "det_user_callout",
+            "csm_user_callout",
+            "ethif_eth_callout",
         )
         for root, dirs, files in os.walk(folder_path):
             if files == []:

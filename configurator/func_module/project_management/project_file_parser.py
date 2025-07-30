@@ -95,7 +95,7 @@ class ProjectFileParser(metaclass=SingletonMeta):
     def get_all_module_list(cls, studio_system_cfg_dict):
         all_module_list = set()
         for key, value in studio_system_cfg_dict["module_cfg"].items():
-            if value.get("support_ui", None) and value["support_ui"] is False:
+            if value.get("support_ui", False) is False:
                 continue
             else:
                 all_module_list.add(key)

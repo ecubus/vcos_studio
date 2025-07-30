@@ -133,6 +133,9 @@ if __name__ == "__main__":
     parser_generate.add_argument(
         "--force", action="store_const", const=True, default=False, help="No incremental generation"
     )
+    parser_generate.add_argument(
+        "--sim", action="store_const", const=True, default=False, help="Simulator Mode"
+    )
     parser_swc_generate = subparsers.add_parser("Swc_Generate")
     parser_swc_generate.add_argument(
         "--swcs", type=str, default=None, nargs="*", help="Generate swc template: --module CanInput, CanOutput"
@@ -154,7 +157,7 @@ if __name__ == "__main__":
     elif args.subcommand == "Validate":
         result = cmd_interaction.execute_validation_command(args.Project, args.module)
     elif args.subcommand == "Generate":
-        result = cmd_interaction.execute_generate_command(args.Project, args.module, args.debug, args.force)
+        result = cmd_interaction.execute_generate_command(args.Project, args.module, args.debug, args.force, args.sim)
     elif args.subcommand == "Swc_Generate":
         result = cmd_interaction.execute_swc_generate_command(args.Project, args.swcs)
     elif args.subcommand == "Upgrade":

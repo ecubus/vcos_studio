@@ -20,7 +20,7 @@ from basic_func_module.base_logger import logger
 from basic_func_module.base_common.singleton import Singleton
 
 ROOT_PACKAGE = "components"
-
+DRIVERS_PACKAGE = "drivers"
 
 class LoadPlugIn(Singleton):
 
@@ -55,8 +55,17 @@ class LoadPlugIn(Singleton):
         assert cls.instance
         plug_in_path = os.path.abspath(plug_in_path).replace("\\", "/")
         if module_name:
-            prefix, module = plug_in_path.split(f"/{ROOT_PACKAGE}/")
-            cls.instance.module_name_map[module_name] = f"{ROOT_PACKAGE}.{module.replace('/', '.')}"
+            root_package_str = f"/{ROOT_PACKAGE}/"
+            drivers_package_str = f"/{DRIVERS_PACKAGE}/"
+            if root_package_str in plug_in_path:
+                prefix, module = plug_in_path.split(root_package_str)
+                cls.instance.module_name_map[module_name] = f"{ROOT_PACKAGE}.{module.replace('/', '.')}"
+            elif drivers_package_str in plug_in_path:
+                prefix, module = plug_in_path.split(drivers_package_str)
+                cls.instance.module_name_map[module_name] = f"{DRIVERS_PACKAGE}.{module.replace('/', '.')}"
+            else:
+                logger.ui_error(f"{module_name} System path {plug_in_path} error!")
+                return
             plug_in_base_path = prefix
         else:
             plug_in_base_path = plug_in_path

@@ -134,13 +134,16 @@ class ProjectUIBase(QDialog, Ui_Form):
             )
         else:
             self.lineEditSystemPath.setText(self.system_path)
-            QMessageBox.critical(
-                self,
-                "Critical",
-                f"{system_path} is not provided by VCOS, please select the correct path.",
-                QMessageBox.Ok,
-                QMessageBox.Ok,
-            )
+            self.system_path_incorrect_tips()
+
+    def system_path_incorrect_tips(self):
+        QMessageBox.critical(
+            self,
+            "Critical",
+            "Configurator PlugIn Path is incorrect, please choose the correct {CONFIGURATOR_PLUG_IN_PATH} path.",
+            QMessageBox.StandardButton.Ok,
+            QMessageBox.StandardButton.Ok,
+        )
 
     def update_new_studio_target_info(self, studio_support_target_list):
         self.target_compiler_list = studio_support_target_list
@@ -415,6 +418,9 @@ class ProjectUIBase(QDialog, Ui_Form):
         """
         function triggerd by ok signal to update project configuration
         """
+        if not os.path.exists(self.system_path):
+            self.system_path_incorrect_tips()
+            return
         # update system configuration as variable to return
         path_dict = self.update_sys_info_dict()
         if path_dict == {}:

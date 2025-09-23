@@ -161,6 +161,7 @@ class FuncLogicLayer:
     @log_function_stats(["VCOS工程管理", "打开工程"])
     def open_project(self, project_path):
         # ProjectFileParser提供工程文件配置解析
+        project_path = os.path.realpath(project_path)
         result = ProjectXmlInfoHandler.load_xml_file(project_path)
         if result and result.get("asw_component") is not None:
             logger.debug({k: os.path.basename(v) for k, v in result.get("asw_component", {}).items()})

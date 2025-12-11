@@ -66,6 +66,7 @@ class Task:
 
     progress_dialog = None
     is_debug = False
+    active_tasks = {}
 
     def __init__(
         self,
@@ -87,19 +88,22 @@ class Task:
         self.kwargs = kwargs
         self.enable_progress = enable_progress
         self.signals = WorkerSignals()
+        self.connection_type = QtCore.Qt.ConnectionType.QueuedConnection
         self.future = None
         if callable(error_callback):
-            self.signals.error.connect(error_callback)
+            self.signals.error.connect(error_callback, self.connection_type)
         if callable(result_callback):
-            self.signals.result.connect(result_callback)
+            self.signals.result.connect(result_callback, self.connection_type)
         if callable(finished_callback):
-            self.signals.finished.connect(finished_callback)
+            self.signals.finished.connect(finished_callback, self.connection_type)
+        self.signals.finished.connect(self.on_finished_cleanup, self.connection_type)
         if self.enable_progress:
-            self.signals.progress.connect(self.update_progress)
+            self.signals.progress.connect(self.update_progress, self.connection_type)
             # Add the progress_signal to our kwargs
             self.kwargs["progress_signal"] = self.signals.progress
             Task.progress_dialog = ProgressDialog()
             Task.progress_dialog.show()
+        Task.active_tasks[id(self)] = self
         if auto_run:
             self.start()
 
@@ -109,6 +113,9 @@ class Task:
         if Task.progress_dialog.isHidden():
             Task.progress_dialog.show()
         Task.progress_dialog.setLabelText(str(text))
+
+    def on_finished_cleanup(self):
+        Task.active_tasks.pop(id(self), None)
 
     def run(self):
         """
